@@ -232,7 +232,7 @@ if ( $job->application_deadline ) {
 			</a>
 		<?php endif; ?>
 
-		<!-- WhatsApp -->
+		<!-- WhatsApp (employer direct) -->
 		<?php if ( $wa_number ) : ?>
 			<a href="https://wa.me/<?php echo esc_attr( $wa_number ); ?>?text=<?php echo esc_attr( $wa_message ); ?>"
 				class="ajem-btn ajem-btn-whatsapp" target="_blank" rel="noopener noreferrer">
@@ -240,13 +240,15 @@ if ( $job->application_deadline ) {
 			</a>
 		<?php endif; ?>
 
-		<!-- Share -->
+		<!-- Share buttons -->
+		<span class="ajem-jd-share-sep"><?php esc_html_e( 'Share:', 'ai-job-employer-manager' ); ?></span>
 		<button class="ajem-btn ajem-btn-outline ajem-btn-share" id="ajemCopyLink">
 			🔗 <?php esc_html_e( 'Copy Link', 'ai-job-employer-manager' ); ?>
 		</button>
 		<a href="https://wa.me/?text=<?php echo esc_attr( rawurlencode( $job->job_title . ' — ' . $job_url ) ); ?>"
-			class="ajem-btn ajem-btn-outline" target="_blank" rel="noopener noreferrer">
-			📲 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?>
+			class="ajem-btn ajem-btn-outline" target="_blank" rel="noopener noreferrer"
+			aria-label="<?php esc_attr_e( 'Share on WhatsApp', 'ai-job-employer-manager' ); ?>">
+			📲
 		</a>
 		<a href="<?php echo esc_url( $linkedin_share ); ?>"
 			class="ajem-btn ajem-btn-linkedin" target="_blank" rel="noopener noreferrer"
@@ -347,35 +349,6 @@ if ( $job->application_deadline ) {
 
 		<!-- Sidebar Column -->
 		<aside class="ajem-jd-sidebar">
-
-			<!-- Quick Apply -->
-			<div class="ajem-sidebar-card ajem-apply-card">
-				<h4 class="ajem-sidebar-card-heading"><?php esc_html_e( 'Interested in this job?', 'ai-job-employer-manager' ); ?></h4>
-				<div class="ajem-apply-card-actions">
-					<?php if ( is_user_logged_in() ) : ?>
-						<button class="ajem-btn ajem-btn-primary ajem-btn-full" id="ajemApplyBtnSidebar"
-							data-job-id="<?php echo esc_attr( $job->id ); ?>">
-							📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
-						</button>
-					<?php else : ?>
-						<a href="<?php echo esc_url( $login_url ); ?>" class="ajem-btn ajem-btn-primary ajem-btn-full">
-							📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
-						</a>
-					<?php endif; ?>
-					<?php if ( $phone_number ) : ?>
-						<a href="tel:+<?php echo esc_attr( preg_replace( '/\D/', '', $phone_number ) ); ?>"
-							class="ajem-btn ajem-btn-call ajem-btn-full">
-							📞 <?php esc_html_e( 'Call', 'ai-job-employer-manager' ); ?>
-						</a>
-					<?php endif; ?>
-					<?php if ( $wa_number ) : ?>
-						<a href="https://wa.me/<?php echo esc_attr( $wa_number ); ?>?text=<?php echo esc_attr( $wa_message ); ?>"
-							class="ajem-btn ajem-btn-whatsapp ajem-btn-full" target="_blank" rel="noopener noreferrer">
-							💬 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?>
-						</a>
-					<?php endif; ?>
-				</div>
-			</div>
 
 			<!-- Company Info -->
 			<?php if ( $employer ) : ?>
