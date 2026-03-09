@@ -626,11 +626,11 @@
 .ajem-jobs-table {
 	width:           100%;
 	border-collapse: collapse;
-	font-size:       13px;
+	font-size:       14px;
 }
 
 .ajem-jobs-table thead th {
-	padding:        8px 10px;
+	padding:        8px 12px;
 	text-align:     left;
 	font-size:      11px;
 	font-weight:    700;
@@ -639,13 +639,12 @@
 	color:          var(--ajem-text-light);
 	border-bottom:  2px solid var(--ajem-border);
 	background:     var(--ajem-bg);
-	white-space:    nowrap;
 }
 
 .ajem-jobs-table tbody .ajem-jt-row {
-	background:    var(--ajem-white);
+	background:  var(--ajem-white);
 	border-bottom: 1px solid var(--ajem-border);
-	transition:    background var(--ajem-transition);
+	transition:  background var(--ajem-transition), box-shadow var(--ajem-transition);
 }
 
 .ajem-jobs-table tbody .ajem-jt-row:last-child {
@@ -653,7 +652,7 @@
 }
 
 .ajem-jobs-table tbody .ajem-jt-row:hover {
-	background: var(--ajem-accent);
+	background:  var(--ajem-accent);
 }
 
 .ajem-jobs-table tbody .ajem-jt-row.ajem-jt-featured {
@@ -661,61 +660,57 @@
 }
 
 .ajem-jobs-table td {
-	padding:        10px 10px;
-	vertical-align: middle;
+	padding:        14px 12px;
+	vertical-align: top;
 }
 
-/* Column widths */
-.ajem-jt-col-logo    { width: 44px; }
-.ajem-jt-col-title   { width: 18%; min-width: 130px; }
-.ajem-jt-col-company { width: 13%; min-width: 100px; }
-.ajem-jt-col-location{ width: 11%; min-width: 90px; }
-.ajem-jt-col-type    { width: 9%;  min-width: 80px; }
-.ajem-jt-col-salary  { width: 12%; min-width: 100px; }
-.ajem-jt-col-posted  { width: 9%;  min-width: 80px; white-space: nowrap; }
-.ajem-jt-col-views   { width: 5%;  min-width: 50px; text-align: center; }
-.ajem-jt-col-desc    { width: 13%; }
-.ajem-jt-col-action  { width: 12%; min-width: 130px; }
+/* Job column */
+.ajem-jt-col-job     { width: 30%; }
+.ajem-jt-col-details { width: 22%; }
+.ajem-jt-col-desc    { width: 30%; }
+.ajem-jt-col-action  { width: 18%; }
 
-/* Logo cell */
-.ajem-jt-logo-cell {
-	text-align: center;
-	padding:    10px 6px;
+.ajem-jt-job-inner {
+	display:     flex;
+	gap:         12px;
+	align-items: flex-start;
 }
 
 .ajem-jt-logo {
-	width:         38px;
-	height:        38px;
+	width:         44px;
+	height:        44px;
 	object-fit:    contain;
 	border:        1px solid var(--ajem-border);
 	border-radius: var(--ajem-radius);
-	display:       block;
+	flex-shrink:   0;
 }
 
 .ajem-jt-logo-placeholder {
-	width:           38px;
-	height:          38px;
+	width:           44px;
+	height:          44px;
 	background:      var(--ajem-primary);
 	color:           #fff;
 	display:         flex;
 	align-items:     center;
 	justify-content: center;
-	font-size:       16px;
+	font-size:       18px;
 	font-weight:     700;
 	border-radius:   var(--ajem-radius);
+	flex-shrink:     0;
 }
 
-/* Title cell */
-.ajem-jt-title-cell {
-	vertical-align: middle;
+.ajem-jt-job-meta {
+	flex:      1;
+	min-width: 0;
 }
 
 .ajem-jt-title {
 	display:         block;
 	font-weight:     700;
-	font-size:       14px;
+	font-size:       15px;
 	color:           var(--ajem-text);
 	text-decoration: none;
+	margin-bottom:   3px;
 	line-height:     1.3;
 }
 
@@ -723,72 +718,62 @@
 	color: var(--ajem-primary);
 }
 
-/* Company, Location, Type, Salary, Posted, Views cells */
-.ajem-jt-company-cell  { font-size: 13px; color: var(--ajem-text-light); }
-.ajem-jt-location-cell { font-size: 12px; color: var(--ajem-text-light); }
+.ajem-jt-company {
+	font-size:   13px;
+	color:       var(--ajem-text-light);
+	margin-bottom: 3px;
+}
 
+.ajem-jt-location {
+	font-size: 12px;
+	color:     var(--ajem-text-light);
+}
+
+/* Details column */
 .ajem-jt-salary {
 	font-size:   13px;
 	color:       var(--ajem-secondary);
 	font-weight: 600;
+	margin-top:  6px;
 }
 
-.ajem-jt-views-cell {
-	text-align:     center;
-	font-size:      13px;
-	color:          var(--ajem-text-light);
-	font-weight:    600;
-	vertical-align: middle;
+.ajem-jt-deadline {
+	font-size:  12px;
+	color:      var(--ajem-red, #ef4444);
+	margin-top: 4px;
 }
 
-.ajem-jt-na {
+.ajem-jt-posted {
+	font-size:  12px;
+	color:      var(--ajem-text-light);
+	margin-top: 4px;
+}
+
+.ajem-jt-skills {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       4px;
+	margin-top: 8px;
+}
+
+/* Description column */
+.ajem-jt-desc-text {
+	margin:      0;
+	font-size:   13px;
+	color:       var(--ajem-text-light);
+	line-height: 1.55;
+}
+
+.ajem-jt-no-desc {
 	color: var(--ajem-border);
 }
 
-/* Description cell */
-.ajem-jt-desc-cell { vertical-align: middle; }
-
-.ajem-jt-desc-text {
-	font-size:   12px;
-	color:       var(--ajem-text-light);
-	line-height: 1.5;
+/* Action column */
+.ajem-jt-action {
+	display:        flex;
+	flex-direction: column;
+	gap:            8px;
 }
-
-/* Action cell */
-.ajem-jt-action-cell {
-	vertical-align: middle;
-}
-
-.ajem-jt-apply-btn {
-	display:     block;
-	white-space: nowrap;
-	margin-bottom: 6px;
-}
-
-.ajem-jt-share-row {
-	display:     flex;
-	gap:         4px;
-	align-items: center;
-}
-
-.ajem-jt-share-btn {
-	display:         inline-flex;
-	align-items:     center;
-	justify-content: center;
-	width:           28px;
-	height:          28px;
-	border-radius:   6px;
-	text-decoration: none;
-	font-size:       13px;
-	font-weight:     700;
-	transition:      opacity var(--ajem-transition);
-}
-
-.ajem-jt-share-btn:hover { opacity: 0.8; }
-
-.ajem-jt-share-wa { background: #25d366; color: #fff; }
-.ajem-jt-share-li { background: #0a66c2; color: #fff; font-style: italic; }
-.ajem-jt-share-tw { background: #000;    color: #fff; font-style: normal; }
 
 /* Share separator on single job page action bar */
 .ajem-jd-share-sep {
@@ -1756,29 +1741,21 @@
 		overflow:      hidden;
 	}
 
-	/* Hide logo and views cells on mobile — not useful in stacked view */
-	.ajem-jt-logo-cell,
-	.ajem-jt-views-cell {
-		display: none;
-	}
-
 	.ajem-jobs-table td {
 		display: block;
-		padding: 6px 14px;
-		width:   auto !important;
+		padding: 10px 14px;
 	}
 
-	.ajem-jt-action-cell {
-		padding-bottom: 14px;
+	.ajem-jt-action {
+		flex-direction: row;
+		gap: 8px;
 	}
 
-	.ajem-jt-share-row {
-		margin-top: 6px;
-	}
-
-	/* Job detail share separator inline */
-	.ajem-jd-share-sep {
-		display: none;
+	.ajem-jt-col-job,
+	.ajem-jt-col-details,
+	.ajem-jt-col-desc,
+	.ajem-jt-col-action {
+		width: auto;
 	}
 }
 

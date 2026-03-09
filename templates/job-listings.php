@@ -139,20 +139,13 @@ $city         = sanitize_text_field( wp_unslash( $_GET['city'] ?? '' ) );
 				</div>
 			<?php else : ?>
 
-				<div class="ajem-table-wrap">
 				<table class="ajem-jobs-table">
 					<thead>
 						<tr>
-							<th class="ajem-jt-col-logo" aria-label="<?php esc_attr_e( 'Logo', 'ai-job-employer-manager' ); ?>"></th>
-							<th class="ajem-jt-col-title"><?php esc_html_e( 'Title', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-company"><?php esc_html_e( 'Company', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-location"><?php esc_html_e( 'Location', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-type"><?php esc_html_e( 'Type', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-salary"><?php esc_html_e( 'Salary', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-posted"><?php esc_html_e( 'Posted', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-views"><?php esc_html_e( 'Views', 'ai-job-employer-manager' ); ?></th>
+							<th class="ajem-jt-col-job"><?php esc_html_e( 'Job', 'ai-job-employer-manager' ); ?></th>
+							<th class="ajem-jt-col-details"><?php esc_html_e( 'Details', 'ai-job-employer-manager' ); ?></th>
 							<th class="ajem-jt-col-desc"><?php esc_html_e( 'Description', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-action"><?php esc_html_e( 'Actions', 'ai-job-employer-manager' ); ?></th>
+							<th class="ajem-jt-col-action"><?php esc_html_e( 'Action', 'ai-job-employer-manager' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -165,125 +158,99 @@ $city         = sanitize_text_field( wp_unslash( $_GET['city'] ?? '' ) );
 							$jt_max  = $job->salary_max ? number_format( (float) $job->salary_max ) : '';
 							$jt_sal  = $jt_curr . ' ' . $jt_min . ( $jt_min && $jt_max ? ' – ' . $jt_max : $jt_max );
 						}
-						// Description excerpt — strip HTML tags, limit to 100 chars.
+						// Description excerpt — strip HTML tags, limit to 130 chars.
 						$jt_desc_raw     = wp_strip_all_tags( $job->job_description ?? '' );
-						$jt_desc_excerpt = mb_strlen( $jt_desc_raw ) > 100
-							? mb_substr( $jt_desc_raw, 0, 100 ) . '…'
+						$jt_desc_excerpt = mb_strlen( $jt_desc_raw ) > 130
+							? mb_substr( $jt_desc_raw, 0, 130 ) . '…'
 							: $jt_desc_raw;
 						// Job type label.
 						$jt_type = str_replace( '_', ' ', ucfirst( $job->job_type ?? '' ) );
 						// Job URL.
 						$jt_url  = esc_url( site_url( '/jobs/' . $job->job_slug ) );
-						// Share URLs.
-						$jt_share_text   = rawurlencode( $job->job_title . ( ! empty( $job->company_name ) ? ' at ' . $job->company_name : '' ) );
-						$jt_wa_share_url = esc_url( 'https://wa.me/?text=' . rawurlencode( $job->job_title . ' — ' . site_url( '/jobs/' . $job->job_slug ) ) );
-						$jt_li_share_url = esc_url( 'https://www.linkedin.com/sharing/share-offsite/?url=' . rawurlencode( site_url( '/jobs/' . $job->job_slug ) ) );
-						$jt_tw_share_url = esc_url( 'https://twitter.com/intent/tweet?text=' . $jt_share_text . '&url=' . rawurlencode( site_url( '/jobs/' . $job->job_slug ) ) );
 					?>
 					<tr class="ajem-jt-row<?php echo $job->is_featured ? ' ajem-jt-featured' : ''; ?>">
 
-						<!-- Logo column -->
-						<td class="ajem-jt-logo-cell">
-							<?php if ( ! empty( $job->company_logo ) ) : ?>
-								<img src="<?php echo esc_url( $job->company_logo ); ?>"
-									alt="<?php echo esc_attr( $job->company_name ?? '' ); ?>"
-									class="ajem-jt-logo">
-							<?php else : ?>
-								<div class="ajem-jt-logo-placeholder">
-									<?php echo esc_html( mb_strtoupper( mb_substr( $job->company_name ?? 'J', 0, 1 ) ) ); ?>
+						<!-- Job column: logo + title + company + location -->
+						<td class="ajem-jt-job">
+							<div class="ajem-jt-job-inner">
+								<?php if ( ! empty( $job->company_logo ) ) : ?>
+									<img src="<?php echo esc_url( $job->company_logo ); ?>"
+										alt="<?php echo esc_attr( $job->company_name ?? '' ); ?>"
+										class="ajem-jt-logo">
+								<?php else : ?>
+									<div class="ajem-jt-logo-placeholder">
+										<?php echo esc_html( mb_strtoupper( mb_substr( $job->company_name ?? 'J', 0, 1 ) ) ); ?>
+									</div>
+								<?php endif; ?>
+								<div class="ajem-jt-job-meta">
+									<a href="<?php echo $jt_url; ?>" class="ajem-jt-title">
+										<?php echo esc_html( $job->job_title ); ?>
+									</a>
+									<?php if ( ! empty( $job->company_name ) ) : ?>
+										<div class="ajem-jt-company"><?php echo esc_html( $job->company_name ); ?></div>
+									<?php endif; ?>
+									<?php if ( $job->city ) : ?>
+										<div class="ajem-jt-location">📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></div>
+									<?php endif; ?>
+									<?php if ( $job->is_featured ) : ?>
+										<span class="ajem-badge ajem-badge-featured"><?php esc_html_e( 'Featured', 'ai-job-employer-manager' ); ?></span>
+									<?php endif; ?>
+								</div>
+							</div>
+						</td>
+
+						<!-- Details column: type + salary + deadline + posted -->
+						<td class="ajem-jt-details">
+							<?php if ( $jt_type ) : ?>
+								<span class="ajem-badge ajem-badge-type"><?php echo esc_html( $jt_type ); ?></span>
+							<?php endif; ?>
+							<?php if ( $jt_sal ) : ?>
+								<div class="ajem-jt-salary">💰 <?php echo esc_html( $jt_sal ); ?></div>
+							<?php endif; ?>
+							<?php if ( $job->application_deadline ) : ?>
+								<div class="ajem-jt-deadline">⏰ <?php
+									printf(
+										/* translators: %s: deadline date */
+										esc_html__( 'Deadline: %s', 'ai-job-employer-manager' ),
+										esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) )
+									);
+								?></div>
+							<?php endif; ?>
+							<div class="ajem-jt-posted">🕒 <?php echo esc_html( human_time_diff( strtotime( $job->created_at ), time() ) . ' ' . __( 'ago', 'ai-job-employer-manager' ) ); ?></div>
+							<?php if ( ! empty( $job->required_skills_array ) ) : ?>
+								<div class="ajem-jt-skills">
+									<?php foreach ( array_slice( $job->required_skills_array, 0, 4 ) as $skill ) : ?>
+										<span class="ajem-skill-tag"><?php echo esc_html( $skill ); ?></span>
+									<?php endforeach; ?>
 								</div>
 							<?php endif; ?>
 						</td>
 
-						<!-- Title column -->
-						<td class="ajem-jt-title-cell">
-							<a href="<?php echo $jt_url; ?>" class="ajem-jt-title">
-								<?php echo esc_html( $job->job_title ); ?>
-							</a>
-							<?php if ( $job->is_featured ) : ?>
-								<span class="ajem-badge ajem-badge-featured ajem-badge-sm"><?php esc_html_e( 'Featured', 'ai-job-employer-manager' ); ?></span>
-							<?php endif; ?>
-						</td>
-
-						<!-- Company column -->
-						<td class="ajem-jt-company-cell">
-							<?php echo esc_html( $job->company_name ?? '—' ); ?>
-						</td>
-
-						<!-- Location column -->
-						<td class="ajem-jt-location-cell">
-							<?php if ( $job->city ) : ?>
-								📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?>
-							<?php else : ?>
-								<span class="ajem-jt-na">—</span>
-							<?php endif; ?>
-						</td>
-
-						<!-- Job Type column -->
-						<td class="ajem-jt-type-cell">
-							<?php if ( $jt_type ) : ?>
-								<span class="ajem-badge ajem-badge-type"><?php echo esc_html( $jt_type ); ?></span>
-							<?php else : ?>
-								<span class="ajem-jt-na">—</span>
-							<?php endif; ?>
-						</td>
-
-						<!-- Salary column -->
-						<td class="ajem-jt-salary-cell">
-							<?php if ( $jt_sal ) : ?>
-								<span class="ajem-jt-salary"><?php echo esc_html( $jt_sal ); ?></span>
-							<?php else : ?>
-								<span class="ajem-jt-na">—</span>
-							<?php endif; ?>
-						</td>
-
-						<!-- Posted Date column -->
-						<td class="ajem-jt-posted-cell">
-							<?php echo esc_html( human_time_diff( strtotime( $job->created_at ), time() ) . ' ' . __( 'ago', 'ai-job-employer-manager' ) ); ?>
-						</td>
-
-						<!-- Views column -->
-						<td class="ajem-jt-views-cell">
-							<?php echo esc_html( number_format( (int) ( $job->views_count ?? 0 ) ) ); ?>
-						</td>
-
 						<!-- Description column -->
-						<td class="ajem-jt-desc-cell">
+						<td class="ajem-jt-desc">
 							<?php if ( $jt_desc_excerpt ) : ?>
-								<span class="ajem-jt-desc-text"><?php echo esc_html( $jt_desc_excerpt ); ?></span>
+								<p class="ajem-jt-desc-text"><?php echo esc_html( $jt_desc_excerpt ); ?></p>
 							<?php else : ?>
-								<span class="ajem-jt-na">—</span>
+								<span class="ajem-jt-no-desc">—</span>
 							<?php endif; ?>
 						</td>
 
-						<!-- Actions column: Apply + Share -->
-						<td class="ajem-jt-action-cell">
+						<!-- Action column: View + Apply -->
+						<td class="ajem-jt-action">
+							<a href="<?php echo $jt_url; ?>"
+								class="ajem-btn ajem-btn-sm ajem-btn-primary ajem-btn-full">
+								<?php esc_html_e( 'View Job', 'ai-job-employer-manager' ); ?>
+							</a>
 							<a href="<?php echo $jt_url; ?>?apply=1"
-								class="ajem-btn ajem-btn-sm ajem-btn-primary ajem-jt-apply-btn">
+								class="ajem-btn ajem-btn-sm ajem-btn-outline ajem-btn-full">
 								📝 <?php esc_html_e( 'Apply', 'ai-job-employer-manager' ); ?>
 							</a>
-							<div class="ajem-jt-share-row">
-								<a href="<?php echo $jt_wa_share_url; ?>"
-									class="ajem-jt-share-btn ajem-jt-share-wa"
-									target="_blank" rel="noopener noreferrer"
-									title="<?php esc_attr_e( 'Share on WhatsApp', 'ai-job-employer-manager' ); ?>">📲</a>
-								<a href="<?php echo $jt_li_share_url; ?>"
-									class="ajem-jt-share-btn ajem-jt-share-li"
-									target="_blank" rel="noopener noreferrer"
-									title="<?php esc_attr_e( 'Share on LinkedIn', 'ai-job-employer-manager' ); ?>">in</a>
-								<a href="<?php echo $jt_tw_share_url; ?>"
-									class="ajem-jt-share-btn ajem-jt-share-tw"
-									target="_blank" rel="noopener noreferrer"
-									title="<?php esc_attr_e( 'Share on X', 'ai-job-employer-manager' ); ?>"
-									aria-label="<?php esc_attr_e( 'Share on X (Twitter)', 'ai-job-employer-manager' ); ?>">X</a>
-							</div>
 						</td>
 
 					</tr>
 					<?php endforeach; ?>
 					</tbody>
 				</table>
-				</div><!-- /.ajem-table-wrap -->
 
 				<!-- Pagination -->
 				<?php if ( $pages > 1 ) : ?>
