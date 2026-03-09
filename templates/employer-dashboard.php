@@ -135,6 +135,25 @@ $company_name = $employer ? esc_html( $employer->company_name ) : esc_html( $use
 		<div class="ajem-section<?php echo $section === 'profile' ? ' active' : ''; ?>" id="ajem-section-profile">
 			<h2><?php esc_html_e( 'Company Profile', 'ai-job-employer-manager' ); ?></h2>
 
+			<!-- Company Logo Upload -->
+			<div class="ajem-logo-upload-wrap">
+				<div class="ajem-logo-preview" id="ajemLogoPreview">
+					<?php if ( $employer && $employer->company_logo ) : ?>
+						<img src="<?php echo esc_url( $employer->company_logo ); ?>" alt="<?php esc_attr_e( 'Company Logo', 'ai-job-employer-manager' ); ?>" id="ajemLogoImg">
+					<?php else : ?>
+						<span class="ajem-logo-placeholder-text" id="ajemLogoPlaceholder"><?php esc_html_e( 'No logo', 'ai-job-employer-manager' ); ?></span>
+					<?php endif; ?>
+				</div>
+				<div class="ajem-logo-upload-controls">
+					<label for="ajemLogoFile" class="ajem-btn ajem-btn-secondary">
+						<?php esc_html_e( '📷 Choose Logo', 'ai-job-employer-manager' ); ?>
+					</label>
+					<input type="file" id="ajemLogoFile" name="company_logo_file" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+					<p class="description"><?php esc_html_e( 'JPEG, PNG, GIF or WebP. Max 2 MB.', 'ai-job-employer-manager' ); ?></p>
+					<span class="ajem-logo-upload-status" id="ajemLogoUploadStatus"></span>
+				</div>
+			</div>
+
 			<form class="ajem-form" id="ajemProfileForm">
 				<?php wp_nonce_field( 'ajem_nonce', 'ajem_nonce' ); ?>
 

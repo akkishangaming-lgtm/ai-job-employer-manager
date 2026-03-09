@@ -111,16 +111,9 @@ $posted_date = date_i18n( get_option( 'date_format' ), strtotime( $job->created_
 
 // Company initial fallback.
 $company_initial = mb_strtoupper( mb_substr( $employer ? $employer->company_name : 'J', 0, 1 ) );
-
-// Social share URLs.
-$share_text        = rawurlencode( $job->job_title . ( $employer ? ' at ' . $employer->company_name : '' ) );
-$linkedin_share    = 'https://www.linkedin.com/sharing/share-offsite/?url=' . rawurlencode( $job_url );
-$twitter_share     = 'https://twitter.com/intent/tweet?text=' . $share_text . '&url=' . rawurlencode( $job_url );
-
-// Breadcrumb: resolve job listings page.
-$ajem_settings    = get_option( 'ajem_settings', array() );
-$listings_page_id = ! empty( $ajem_settings['listings_page_id'] ) ? (int) $ajem_settings['listings_page_id'] : 0;
-$listings_url     = $listings_page_id > 0 ? get_permalink( $listings_page_id ) : '';
+$share_text     = rawurlencode( $job->job_title . ( $employer ? ' at ' . $employer->company_name : '' ) );
+$linkedin_share = 'https://www.linkedin.com/sharing/share-offsite/?url=' . rawurlencode( $job_url );
+$twitter_share  = 'https://twitter.com/intent/tweet?text=' . $share_text . '&url=' . rawurlencode( $job_url );
 
 // Deadline status.
 $days_until_deadline = null;
@@ -130,23 +123,6 @@ if ( $job->application_deadline ) {
 	);
 }
 ?>
-
-<!-- ── Breadcrumb ───────────────────────────────────────────────────────── -->
-<nav class="ajem-breadcrumb" aria-label="<?php esc_attr_e( 'Breadcrumb', 'ai-job-employer-manager' ); ?>">
-	<ol class="ajem-breadcrumb-list">
-		<li class="ajem-breadcrumb-item">
-			<a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Home', 'ai-job-employer-manager' ); ?></a>
-		</li>
-		<li class="ajem-breadcrumb-sep" aria-hidden="true">/</li>
-		<?php if ( $listings_url ) : ?>
-			<li class="ajem-breadcrumb-item">
-				<a href="<?php echo esc_url( $listings_url ); ?>"><?php esc_html_e( 'Jobs', 'ai-job-employer-manager' ); ?></a>
-			</li>
-			<li class="ajem-breadcrumb-sep" aria-hidden="true">/</li>
-		<?php endif; ?>
-		<li class="ajem-breadcrumb-item" aria-current="page"><?php echo esc_html( $job->job_title ); ?></li>
-	</ol>
-</nav>
 
 <div class="ajem-job-detail-page">
 
@@ -177,76 +153,60 @@ if ( $job->application_deadline ) {
 
 	<!-- ── Header Card ───────────────────────────────────────────────────── -->
 	<div class="ajem-jd-header-card">
-		<div class="ajem-jd-header-inner">
 
-			<!-- Logo / Initial -->
-			<div class="ajem-jd-logo-wrap">
-				<?php if ( $employer && $employer->company_logo ) : ?>
-					<img src="<?php echo esc_url( $employer->company_logo ); ?>"
-						alt="<?php echo esc_attr( $employer->company_name ); ?>"
-						class="ajem-jd-logo">
+		<h1 class="ajem-jd-title"><?php echo esc_html( $job->job_title ); ?></h1>
+
+		<?php if ( $employer ) : ?>
+			<div class="ajem-jd-company">
+				<?php if ( $employer->company_website ) : ?>
+					<a href="<?php echo esc_url( $employer->company_website ); ?>" target="_blank" rel="noopener noreferrer">
+						<?php echo esc_html( $employer->company_name ); ?>
+					</a>
 				<?php else : ?>
-					<div class="ajem-jd-logo-placeholder"><?php echo esc_html( $company_initial ); ?></div>
+					<?php echo esc_html( $employer->company_name ); ?>
 				<?php endif; ?>
 			</div>
+		<?php endif; ?>
 
-			<!-- Title / Company / Meta chips -->
-			<div class="ajem-jd-heading">
-				<h1 class="ajem-jd-title"><?php echo esc_html( $job->job_title ); ?></h1>
+		<div class="ajem-jd-meta-chips">
+			<?php if ( $job->city ) : ?>
+				<span class="ajem-meta-chip">📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></span>
+			<?php endif; ?>
 
-				<?php if ( $employer ) : ?>
-					<div class="ajem-jd-company">
-						<?php if ( $employer->company_website ) : ?>
-							<a href="<?php echo esc_url( $employer->company_website ); ?>" target="_blank" rel="noopener noreferrer">
-								<?php echo esc_html( $employer->company_name ); ?>
-							</a>
-						<?php else : ?>
-							<?php echo esc_html( $employer->company_name ); ?>
-						<?php endif; ?>
-					</div>
-				<?php endif; ?>
+			<?php if ( $type_label ) : ?>
+				<span class="ajem-badge ajem-badge-type"><?php echo esc_html( $type_label ); ?></span>
+			<?php endif; ?>
 
-				<div class="ajem-jd-meta-chips">
-					<?php if ( $job->city ) : ?>
-						<span class="ajem-meta-chip">📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></span>
-					<?php endif; ?>
+			<?php if ( $job->industry ) : ?>
+				<span class="ajem-meta-chip">🏭 <?php echo esc_html( $job->industry ); ?></span>
+			<?php endif; ?>
 
-					<?php if ( $type_label ) : ?>
-						<span class="ajem-badge ajem-badge-type"><?php echo esc_html( $type_label ); ?></span>
-					<?php endif; ?>
+			<?php if ( $salary_str ) : ?>
+				<span class="ajem-meta-chip ajem-salary-chip">💰 <?php echo esc_html( $salary_str ); ?></span>
+			<?php endif; ?>
 
-					<?php if ( $job->industry ) : ?>
-						<span class="ajem-meta-chip">🏭 <?php echo esc_html( $job->industry ); ?></span>
-					<?php endif; ?>
+			<span class="ajem-meta-chip" title="<?php echo esc_attr( $posted_date ); ?>">🕒 <?php
+				/* translators: %s: time ago string */
+				printf( esc_html__( 'Posted %s ago', 'ai-job-employer-manager' ), esc_html( $posted_diff ) );
+			?></span>
 
-					<?php if ( $salary_str ) : ?>
-						<span class="ajem-meta-chip ajem-salary-chip">💰 <?php echo esc_html( $salary_str ); ?></span>
-					<?php endif; ?>
+			<?php if ( $job->application_deadline ) : ?>
+				<span class="ajem-meta-chip ajem-deadline-chip">⏰ <?php
+					printf(
+						/* translators: %s: application deadline date */
+						esc_html__( 'Apply by %s', 'ai-job-employer-manager' ),
+						esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) )
+					);
+				?></span>
+			<?php endif; ?>
 
-					<span class="ajem-meta-chip" title="<?php echo esc_attr( $posted_date ); ?>">🕒 <?php
-						/* translators: %s: time ago string */
-						printf( esc_html__( 'Posted %s ago', 'ai-job-employer-manager' ), esc_html( $posted_diff ) );
-					?></span>
+			<?php if ( $job->views_count > 0 ) : ?>
+				<span class="ajem-meta-chip ajem-meta-chip-views" title="<?php esc_attr_e( 'Number of views', 'ai-job-employer-manager' ); ?>">
+					👁 <?php echo esc_html( number_format( (int) $job->views_count ) ); ?>
+				</span>
+			<?php endif; ?>
+		</div>
 
-					<?php if ( $job->application_deadline ) : ?>
-						<span class="ajem-meta-chip ajem-deadline-chip">⏰ <?php
-							printf(
-								/* translators: %s: application deadline date */
-								esc_html__( 'Apply by %s', 'ai-job-employer-manager' ),
-								esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) )
-							);
-						?></span>
-					<?php endif; ?>
-
-					<?php if ( $job->views_count > 0 ) : ?>
-						<span class="ajem-meta-chip ajem-meta-chip-views" title="<?php esc_attr_e( 'Number of views', 'ai-job-employer-manager' ); ?>">
-							👁 <?php echo esc_html( number_format( (int) $job->views_count ) ); ?>
-						</span>
-					<?php endif; ?>
-				</div>
-			</div><!-- /.ajem-jd-heading -->
-
-		</div><!-- /.ajem-jd-header-inner -->
 	</div><!-- /.ajem-jd-header-card -->
 
 	<!-- ── Action Buttons ────────────────────────────────────────────────── -->
@@ -306,72 +266,61 @@ if ( $job->application_deadline ) {
 		<!-- Main Column -->
 		<div class="ajem-jd-main">
 
-			<!-- Job Highlights -->
+			<!-- Job Highlights — table layout -->
 			<div class="ajem-jd-card ajem-jd-highlights">
 				<h3 class="ajem-jd-card-title"><?php esc_html_e( 'Job Highlights', 'ai-job-employer-manager' ); ?></h3>
-				<div class="ajem-highlights-grid">
+				<table class="ajem-highlights-table">
+					<tbody>
+						<?php if ( $type_label ) : ?>
+							<tr>
+								<th scope="row"><span class="ajem-ht-icon">💼</span> <?php esc_html_e( 'Job Type', 'ai-job-employer-manager' ); ?></th>
+								<td><?php echo esc_html( $type_label ); ?></td>
+							</tr>
+						<?php endif; ?>
 
-					<?php if ( $type_label ) : ?>
-						<div class="ajem-highlight-item">
-							<span class="ajem-highlight-icon">💼</span>
-							<div>
-								<div class="ajem-highlight-label"><?php esc_html_e( 'Job Type', 'ai-job-employer-manager' ); ?></div>
-								<div class="ajem-highlight-value"><?php echo esc_html( $type_label ); ?></div>
-							</div>
-						</div>
-					<?php endif; ?>
+						<?php if ( $salary_str ) : ?>
+							<tr>
+								<th scope="row"><span class="ajem-ht-icon">💰</span> <?php esc_html_e( 'Salary', 'ai-job-employer-manager' ); ?></th>
+								<td class="ajem-ht-salary"><?php echo esc_html( $salary_str ); ?></td>
+							</tr>
+						<?php endif; ?>
 
-					<?php if ( $salary_str ) : ?>
-						<div class="ajem-highlight-item">
-							<span class="ajem-highlight-icon">💰</span>
-							<div>
-								<div class="ajem-highlight-label"><?php esc_html_e( 'Salary', 'ai-job-employer-manager' ); ?></div>
-								<div class="ajem-highlight-value ajem-highlight-salary"><?php echo esc_html( $salary_str ); ?></div>
-							</div>
-						</div>
-					<?php endif; ?>
+						<?php if ( $job->experience_required ) : ?>
+							<tr>
+								<th scope="row"><span class="ajem-ht-icon">📈</span> <?php esc_html_e( 'Experience', 'ai-job-employer-manager' ); ?></th>
+								<td><?php echo esc_html( $job->experience_required ); ?></td>
+							</tr>
+						<?php endif; ?>
 
-					<?php if ( $job->experience_required ) : ?>
-						<div class="ajem-highlight-item">
-							<span class="ajem-highlight-icon">📈</span>
-							<div>
-								<div class="ajem-highlight-label"><?php esc_html_e( 'Experience', 'ai-job-employer-manager' ); ?></div>
-								<div class="ajem-highlight-value"><?php echo esc_html( $job->experience_required ); ?></div>
-							</div>
-						</div>
-					<?php endif; ?>
+						<?php if ( $job->education_required ) : ?>
+							<tr>
+								<th scope="row"><span class="ajem-ht-icon">🎓</span> <?php esc_html_e( 'Education', 'ai-job-employer-manager' ); ?></th>
+								<td><?php echo esc_html( $job->education_required ); ?></td>
+							</tr>
+						<?php endif; ?>
 
-					<?php if ( $job->education_required ) : ?>
-						<div class="ajem-highlight-item">
-							<span class="ajem-highlight-icon">🎓</span>
-							<div>
-								<div class="ajem-highlight-label"><?php esc_html_e( 'Education', 'ai-job-employer-manager' ); ?></div>
-								<div class="ajem-highlight-value"><?php echo esc_html( $job->education_required ); ?></div>
-							</div>
-						</div>
-					<?php endif; ?>
+						<?php if ( $job->application_deadline ) : ?>
+							<tr>
+								<th scope="row"><span class="ajem-ht-icon">📅</span> <?php esc_html_e( 'Apply By', 'ai-job-employer-manager' ); ?></th>
+								<td><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) ); ?></td>
+							</tr>
+						<?php endif; ?>
 
-					<?php if ( $job->application_deadline ) : ?>
-						<div class="ajem-highlight-item">
-							<span class="ajem-highlight-icon">📅</span>
-							<div>
-								<div class="ajem-highlight-label"><?php esc_html_e( 'Apply By', 'ai-job-employer-manager' ); ?></div>
-								<div class="ajem-highlight-value"><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) ); ?></div>
-							</div>
-						</div>
-					<?php endif; ?>
+						<?php if ( $job->city ) : ?>
+							<tr>
+								<th scope="row"><span class="ajem-ht-icon">📍</span> <?php esc_html_e( 'Location', 'ai-job-employer-manager' ); ?></th>
+								<td><?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></td>
+							</tr>
+						<?php endif; ?>
 
-					<?php if ( $job->city ) : ?>
-						<div class="ajem-highlight-item">
-							<span class="ajem-highlight-icon">📍</span>
-							<div>
-								<div class="ajem-highlight-label"><?php esc_html_e( 'Location', 'ai-job-employer-manager' ); ?></div>
-								<div class="ajem-highlight-value"><?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></div>
-							</div>
-						</div>
-					<?php endif; ?>
-
-				</div><!-- /.ajem-highlights-grid -->
+						<?php if ( $job->industry ) : ?>
+							<tr>
+								<th scope="row"><span class="ajem-ht-icon">🏭</span> <?php esc_html_e( 'Industry', 'ai-job-employer-manager' ); ?></th>
+								<td><?php echo esc_html( $job->industry ); ?></td>
+							</tr>
+						<?php endif; ?>
+					</tbody>
+				</table>
 			</div><!-- /.ajem-jd-highlights -->
 
 			<!-- Skills -->
@@ -401,56 +350,92 @@ if ( $job->application_deadline ) {
 
 			<!-- Quick Apply -->
 			<div class="ajem-sidebar-card ajem-apply-card">
-				<h4><?php esc_html_e( 'Interested in this job?', 'ai-job-employer-manager' ); ?></h4>
-				<?php if ( is_user_logged_in() ) : ?>
-					<button class="ajem-btn ajem-btn-primary ajem-btn-full" id="ajemApplyBtnSidebar"
-						data-job-id="<?php echo esc_attr( $job->id ); ?>">
-						📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
-					</button>
-				<?php else : ?>
-					<a href="<?php echo esc_url( $login_url ); ?>" class="ajem-btn ajem-btn-primary ajem-btn-full">
-						📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
-					</a>
-				<?php endif; ?>
-				<?php if ( $phone_number ) : ?>
-					<a href="tel:+<?php echo esc_attr( preg_replace( '/\D/', '', $phone_number ) ); ?>"
-						class="ajem-btn ajem-btn-call ajem-btn-full">
-						📞 <?php esc_html_e( 'Call', 'ai-job-employer-manager' ); ?>
-					</a>
-				<?php endif; ?>
-				<?php if ( $wa_number ) : ?>
-					<a href="https://wa.me/<?php echo esc_attr( $wa_number ); ?>?text=<?php echo esc_attr( $wa_message ); ?>"
-						class="ajem-btn ajem-btn-whatsapp ajem-btn-full" target="_blank" rel="noopener noreferrer">
-						💬 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?>
-					</a>
-				<?php endif; ?>
+				<h4 class="ajem-sidebar-card-heading"><?php esc_html_e( 'Interested in this job?', 'ai-job-employer-manager' ); ?></h4>
+				<div class="ajem-apply-card-actions">
+					<?php if ( is_user_logged_in() ) : ?>
+						<button class="ajem-btn ajem-btn-primary ajem-btn-full" id="ajemApplyBtnSidebar"
+							data-job-id="<?php echo esc_attr( $job->id ); ?>">
+							📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
+						</button>
+					<?php else : ?>
+						<a href="<?php echo esc_url( $login_url ); ?>" class="ajem-btn ajem-btn-primary ajem-btn-full">
+							📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
+						</a>
+					<?php endif; ?>
+					<?php if ( $phone_number ) : ?>
+						<a href="tel:+<?php echo esc_attr( preg_replace( '/\D/', '', $phone_number ) ); ?>"
+							class="ajem-btn ajem-btn-call ajem-btn-full">
+							📞 <?php esc_html_e( 'Call', 'ai-job-employer-manager' ); ?>
+						</a>
+					<?php endif; ?>
+					<?php if ( $wa_number ) : ?>
+						<a href="https://wa.me/<?php echo esc_attr( $wa_number ); ?>?text=<?php echo esc_attr( $wa_message ); ?>"
+							class="ajem-btn ajem-btn-whatsapp ajem-btn-full" target="_blank" rel="noopener noreferrer">
+							💬 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?>
+						</a>
+					<?php endif; ?>
+				</div>
 			</div>
 
 			<!-- Company Info -->
 			<?php if ( $employer ) : ?>
-				<div class="ajem-sidebar-card">
-					<h4><?php esc_html_e( 'About the Company', 'ai-job-employer-manager' ); ?></h4>
-					<?php if ( $employer->company_logo ) : ?>
-						<img src="<?php echo esc_url( $employer->company_logo ); ?>"
-							alt="<?php echo esc_attr( $employer->company_name ); ?>"
-							class="ajem-sidebar-company-logo">
+				<div class="ajem-sidebar-card ajem-company-card">
+					<h4 class="ajem-sidebar-card-heading"><?php esc_html_e( 'About the Company', 'ai-job-employer-manager' ); ?></h4>
+					<div class="ajem-company-card-inner">
+						<?php if ( $employer->company_logo ) : ?>
+							<img src="<?php echo esc_url( $employer->company_logo ); ?>"
+								alt="<?php echo esc_attr( $employer->company_name ); ?>"
+								class="ajem-company-card-logo">
+						<?php else : ?>
+							<div class="ajem-company-card-initial"><?php echo esc_html( $company_initial ); ?></div>
+						<?php endif; ?>
+						<div class="ajem-company-card-details">
+							<div class="ajem-company-card-name">
+								<?php if ( $employer->company_website ) : ?>
+									<a href="<?php echo esc_url( $employer->company_website ); ?>" target="_blank" rel="noopener noreferrer">
+										<?php echo esc_html( $employer->company_name ); ?>
+									</a>
+								<?php else : ?>
+									<?php echo esc_html( $employer->company_name ); ?>
+								<?php endif; ?>
+							</div>
+							<?php if ( $employer->industry ) : ?>
+								<div class="ajem-company-card-meta">🏭 <?php echo esc_html( $employer->industry ); ?></div>
+							<?php endif; ?>
+						</div>
+					</div>
+
+					<?php if ( $employer->company_size || $employer->founded_year || $employer->city || $employer->company_website ) : ?>
+						<table class="ajem-company-info-table">
+							<tbody>
+								<?php if ( $employer->company_size ) : ?>
+									<tr>
+										<th scope="row">👥 <?php esc_html_e( 'Size', 'ai-job-employer-manager' ); ?></th>
+										<td><?php echo esc_html( $employer->company_size ); ?> <?php esc_html_e( 'employees', 'ai-job-employer-manager' ); ?></td>
+									</tr>
+								<?php endif; ?>
+								<?php if ( $employer->founded_year ) : ?>
+									<tr>
+										<th scope="row">🗓 <?php esc_html_e( 'Founded', 'ai-job-employer-manager' ); ?></th>
+										<td><?php echo esc_html( $employer->founded_year ); ?></td>
+									</tr>
+								<?php endif; ?>
+								<?php if ( $employer->city ) : ?>
+									<tr>
+										<th scope="row">📍 <?php esc_html_e( 'Location', 'ai-job-employer-manager' ); ?></th>
+										<td><?php echo esc_html( $employer->city ); ?><?php echo $employer->state ? ', ' . esc_html( $employer->state ) : ''; ?></td>
+									</tr>
+								<?php endif; ?>
+								<?php if ( $employer->company_website ) : ?>
+									<tr>
+										<th scope="row">🌐 <?php esc_html_e( 'Website', 'ai-job-employer-manager' ); ?></th>
+										<td><a href="<?php echo esc_url( $employer->company_website ); ?>" target="_blank" rel="noopener noreferrer" class="ajem-company-link"><?php echo esc_html( preg_replace( '#^https?://#', '', $employer->company_website ) ); ?></a></td>
+									</tr>
+								<?php endif; ?>
+							</tbody>
+						</table>
 					<?php endif; ?>
-					<h3><?php echo esc_html( $employer->company_name ); ?></h3>
-					<?php if ( $employer->industry ) : ?>
-						<p>🏭 <?php echo esc_html( $employer->industry ); ?></p>
-					<?php endif; ?>
-					<?php if ( $employer->company_size ) : ?>
-						<p>👥 <?php echo esc_html( $employer->company_size ); ?> <?php esc_html_e( 'employees', 'ai-job-employer-manager' ); ?></p>
-					<?php endif; ?>
-					<?php if ( $employer->founded_year ) : ?>
-						<p>🗓 <?php printf( esc_html__( 'Founded %s', 'ai-job-employer-manager' ), esc_html( $employer->founded_year ) ); ?></p>
-					<?php endif; ?>
-					<?php if ( $employer->city ) : ?>
-						<p>📍 <?php echo esc_html( $employer->city ); ?><?php echo $employer->state ? ', ' . esc_html( $employer->state ) : ''; ?></p>
-					<?php endif; ?>
-					<?php if ( $employer->company_website ) : ?>
-						<p>🌐 <a href="<?php echo esc_url( $employer->company_website ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $employer->company_website ); ?></a></p>
-					<?php endif; ?>
+
 					<?php if ( $employer->company_description ) : ?>
 						<div class="ajem-company-desc"><?php echo wp_kses_post( $employer->company_description ); ?></div>
 					<?php endif; ?>

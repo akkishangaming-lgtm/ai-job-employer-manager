@@ -66,6 +66,17 @@ class AJEM_REST_API {
 			)
 		);
 
+		// Employer logo upload.
+		register_rest_route(
+			self::NAMESPACE,
+			'/employer/upload-logo',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $api, 'upload_employer_logo' ),
+				'permission_callback' => array( $api, 'is_employer' ),
+			)
+		);
+
 		// ── Employer jobs ─────────────────────────────────────────────────────
 		register_rest_route(
 			self::NAMESPACE,
@@ -371,6 +382,53 @@ class AJEM_REST_API {
 		);
 
 		return new WP_REST_Response( array( 'success' => false !== $result ), 200 );
+	}
+
+	/**
+	 * POST /employer/upload-logo
+	 *
+	 * Accepts a multipart file upload for the company logo, stores it
+	 * in the WordPress media library, and saves the URL to the employer profile.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
+	public function upload_employer_logo( WP_REST_Request $request ): WP_REST_Response {
+		$files = $request->get_file_params();
+
+		if ( empty( $files['logo'] ) || 0 !== $files['logo']['error'] ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => __( 'No file received or upload error.', 'ai-job-employer-manager' ),
+				),
+				400
+			);
+		}
+
+		$profile  = new AJEM_Employer_Profile();
+		$logo_url = $profile->upload_logo( $files['logo'], get_current_user_id() );
+
+		if ( is_wp_error( $logo_url ) ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => $logo_url->get_error_message(),
+				),
+				400
+			);
+		}
+
+		// Save the new URL to the employer profile.
+		$profile->save( get_current_user_id(), array( 'company_logo' => $logo_url ) );
+
+		return new WP_REST_Response(
+			array(
+				'success'   => true,
+				'logo_url'  => $logo_url,
+			),
+			200
+		);
 	}
 
 	/**

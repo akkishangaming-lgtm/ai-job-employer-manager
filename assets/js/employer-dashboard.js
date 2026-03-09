@@ -228,6 +228,59 @@
 		renderSkillTags();
 	});
 
+	// ── Logo Upload ──────────────────────────────────────────────────────────
+
+	// Preview selected logo image immediately.
+	$(document).on('change', '#ajemLogoFile', function () {
+		var file = this.files && this.files[0];
+		if (!file) { return; }
+
+		var $preview     = $('#ajemLogoPreview');
+		var $img         = $('#ajemLogoImg');
+		var $placeholder = $('#ajemLogoPlaceholder');
+		var $status      = $('#ajemLogoUploadStatus');
+
+		// Show local preview.
+		var reader = new FileReader();
+		reader.onload = function (ev) {
+			if ($img.length) {
+				$img.attr('src', ev.target.result);
+			} else {
+				$placeholder.hide();
+				$('<img>').attr({ id: 'ajemLogoImg', src: ev.target.result, alt: '' }).appendTo($preview);
+			}
+		};
+		reader.readAsDataURL(file);
+
+		// Upload to server.
+		$status.text('Uploading…');
+		var formData = new FormData();
+		formData.append('logo', file);
+
+		$.ajax({
+			url:         ajemData.restUrl + 'employer/upload-logo',
+			method:      'POST',
+			data:        formData,
+			processData: false,
+			contentType: false,
+			beforeSend:  function (xhr) {
+				xhr.setRequestHeader('X-WP-Nonce', ajemData.restNonce);
+			}
+		})
+		.done(function (res) {
+			if (res.success) {
+				$status.css('color', 'var(--ajem-green)').text('Logo saved!');
+				setTimeout(function () { $status.text(''); }, 3000);
+			} else {
+				$status.css('color', 'var(--ajem-red)').text(res.message || 'Upload failed.');
+			}
+		})
+		.fail(function (xhr) {
+			var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Upload failed.';
+			$status.css('color', 'var(--ajem-red)').text(msg);
+		});
+	});
+
 	// ── Profile Form ─────────────────────────────────────────────────────────
 
 	$(document).on('submit', '#ajemProfileForm', function (e) {
