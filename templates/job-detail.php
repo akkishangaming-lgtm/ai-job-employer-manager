@@ -17,6 +17,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// ── Helper: render a mini job card (must be defined before use) ───────────
+if ( ! function_exists( 'ajem_render_mini_job_card' ) ) :
+	/**
+	 * Render a mini job card for related/city/nearby sections.
+	 *
+	 * @param object $j Job row (company_name, company_logo, job_slug, job_title,
+	 *                           city, state, salary_min, salary_max,
+	 *                           salary_currency, job_type).
+	 * @return string Escaped HTML.
+	 */
+	function ajem_render_mini_job_card( object $j ): string {
+		$type   = str_replace( '_', ' ', ucwords( str_replace( '_', ' ', $j->job_type ?? '' ) ) );
+		$s_min  = $j->salary_min ? number_format( (float) $j->salary_min ) : '';
+		$s_max  = $j->salary_max ? number_format( (float) $j->salary_max ) : '';
+		$s_curr = esc_html( $j->salary_currency ?? 'INR' );
+		$sal    = ( $s_min || $s_max )
+			? $s_curr . ' ' . $s_min . ( $s_min && $s_max ? ' – ' . $s_max : $s_max )
+			: '';
+		$url    = esc_url( site_url( '/jobs/' . $j->job_slug ) );
+
+		ob_start();
+		?>
+		<div class="ajem-mini-job-card">
+			<a href="<?php echo $url; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — already escaped above ?>" class="ajem-mini-job-link">
+				<div class="ajem-mini-job-top">
+					<?php if ( ! empty( $j->company_logo ) ) : ?>
+						<img src="<?php echo esc_url( $j->company_logo ); ?>"
+							alt="<?php echo esc_attr( $j->company_name ?? '' ); ?>"
+							class="ajem-mini-job-logo">
+					<?php else : ?>
+						<div class="ajem-mini-job-logo-placeholder">
+							<?php echo esc_html( mb_strtoupper( mb_substr( $j->company_name ?? 'J', 0, 1 ) ) ); ?>
+						</div>
+					<?php endif; ?>
+					<div class="ajem-mini-job-info">
+						<div class="ajem-mini-job-title"><?php echo esc_html( $j->job_title ); ?></div>
+						<div class="ajem-mini-job-company"><?php echo esc_html( $j->company_name ?? '' ); ?></div>
+					</div>
+				</div>
+				<div class="ajem-mini-job-meta">
+					<?php if ( $j->city ) : ?>
+						<span class="ajem-mini-chip">📍 <?php echo esc_html( $j->city ); ?></span>
+					<?php endif; ?>
+					<?php if ( $type ) : ?>
+						<span class="ajem-badge ajem-badge-type ajem-badge-sm"><?php echo esc_html( $type ); ?></span>
+					<?php endif; ?>
+					<?php if ( $sal ) : ?>
+						<span class="ajem-mini-chip ajem-mini-salary">💰 <?php echo esc_html( $sal ); ?></span>
+					<?php endif; ?>
+				</div>
+			</a>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+endif; // function_exists check.
+
 $apply_param  = sanitize_text_field( wp_unslash( $_GET['apply'] ?? '' ) );
 $auto_open    = '1' === $apply_param;
 
@@ -439,59 +496,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <?php endif; ?>
-
-<?php
-if ( ! function_exists( 'ajem_render_mini_job_card' ) ) :
-/**
- * Render a mini job card for related/city/nearby sections.
- *
- * @param object $j Job row (with company_name, job_slug, job_title, city, state,
- *                           salary_min, salary_max, salary_currency, job_type).
- * @return string Escaped HTML.
- */
-function ajem_render_mini_job_card( object $j ): string {
-	$type   = str_replace( '_', ' ', ucwords( str_replace( '_', ' ', $j->job_type ?? '' ) ) );
-	$s_min  = $j->salary_min ? number_format( (float) $j->salary_min ) : '';
-	$s_max  = $j->salary_max ? number_format( (float) $j->salary_max ) : '';
-	$s_curr = esc_html( $j->salary_currency ?? 'INR' );
-	$sal    = ( $s_min || $s_max )
-		? $s_curr . ' ' . $s_min . ( $s_min && $s_max ? ' – ' . $s_max : $s_max )
-		: '';
-	$url    = esc_url( site_url( '/jobs/' . $j->job_slug ) );
-
-	ob_start();
-	?>
-	<div class="ajem-mini-job-card">
-		<a href="<?php echo $url; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — already escaped above ?>" class="ajem-mini-job-link">
-			<div class="ajem-mini-job-top">
-				<?php if ( ! empty( $j->company_logo ) ) : ?>
-					<img src="<?php echo esc_url( $j->company_logo ); ?>"
-						alt="<?php echo esc_attr( $j->company_name ?? '' ); ?>"
-						class="ajem-mini-job-logo">
-				<?php else : ?>
-					<div class="ajem-mini-job-logo-placeholder">
-						<?php echo esc_html( mb_strtoupper( mb_substr( $j->company_name ?? 'J', 0, 1 ) ) ); ?>
-					</div>
-				<?php endif; ?>
-				<div class="ajem-mini-job-info">
-					<div class="ajem-mini-job-title"><?php echo esc_html( $j->job_title ); ?></div>
-					<div class="ajem-mini-job-company"><?php echo esc_html( $j->company_name ?? '' ); ?></div>
-				</div>
-			</div>
-			<div class="ajem-mini-job-meta">
-				<?php if ( $j->city ) : ?>
-					<span class="ajem-mini-chip">📍 <?php echo esc_html( $j->city ); ?></span>
-				<?php endif; ?>
-				<?php if ( $type ) : ?>
-					<span class="ajem-badge ajem-badge-type ajem-badge-sm"><?php echo esc_html( $type ); ?></span>
-				<?php endif; ?>
-				<?php if ( $sal ) : ?>
-					<span class="ajem-mini-chip ajem-mini-salary">💰 <?php echo esc_html( $sal ); ?></span>
-				<?php endif; ?>
-			</div>
-		</a>
-	</div>
-	<?php
-	return ob_get_clean();
-}
-endif; // function_exists check.
