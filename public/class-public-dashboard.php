@@ -32,22 +32,27 @@ class AJEM_Public_Dashboard {
 		add_shortcode( 'job_listings', array( $this, 'render_job_listings' ) );
 		add_shortcode( 'job_detail', array( $this, 'render_job_detail' ) );
 
-		// Serve job detail on /jobs/{slug} rewrite.
-		add_action( 'template_redirect', array( $this, 'handle_job_slug_redirect' ) );
+		// Intercept /jobs/{slug} requests and serve them with a theme-wrapped template.
+		add_filter( 'template_include', array( $this, 'filter_job_template' ) );
 	}
 
 	/**
-	 * Serve the job detail page via the rewrite rule (bypasses need for a shortcode page).
+	 * Replace the default WordPress template with our single-job template when
+	 * the `ajem_job_slug` rewrite variable is present.
 	 *
-	 * @return void
+	 * Using `template_include` (rather than `template_redirect` + exit) means
+	 * WordPress still calls `get_header()` and `get_footer()`, so the active
+	 * theme wraps the page and all enqueued CSS/JS are output correctly.
+	 *
+	 * @param string $template Resolved template path.
+	 * @return string
 	 */
-	public function handle_job_slug_redirect(): void {
+	public function filter_job_template( string $template ): string {
 		$slug = get_query_var( 'ajem_job_slug' );
 		if ( ! $slug ) {
-			return;
+			return $template;
 		}
 
-		// Only serve our template if no existing page/post handles this.
 		$job_posting = new AJEM_Job_Posting();
 		$job         = $job_posting->get_by_slug( sanitize_text_field( $slug ) );
 
@@ -55,52 +60,19 @@ class AJEM_Public_Dashboard {
 			global $wp_query;
 			$wp_query->set_404();
 			status_header( 404 );
-			return;
+			nocache_headers();
+			return get_404_template();
 		}
 
-		// Enqueue assets manually since we're bypassing the shortcode page.
-		wp_enqueue_style(
-			'ajem-employer-dashboard',
-			AJEM_PLUGIN_URL . 'assets/css/employer-dashboard.css',
-			array(),
-			AJEM_VERSION
-		);
-		wp_enqueue_script(
-			'ajem-employer-dashboard',
-			AJEM_PLUGIN_URL . 'assets/js/employer-dashboard.js',
-			array( 'jquery' ),
-			AJEM_VERSION,
-			true
-		);
-		wp_localize_script(
-			'ajem-employer-dashboard',
-			'ajemData',
-			array(
-				'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
-				'restUrl'       => esc_url_raw( rest_url( 'ajem/v1/' ) ),
-				'nonce'         => wp_create_nonce( 'ajem_nonce' ),
-				'restNonce'     => wp_create_nonce( 'wp_rest' ),
-				'currentUserId' => get_current_user_id(),
-				'isLoggedIn'    => is_user_logged_in(),
-				'loginUrl'      => wp_login_url( get_permalink() ),
-				'siteUrl'       => site_url(),
-				'pluginUrl'     => AJEM_PLUGIN_URL,
-				'currentJobId'  => (int) $job->id,
-				'currentJobSlug' => esc_js( $job->job_slug ),
-				'i18n'          => array(
-					'saving'         => __( 'Saving...', 'ai-job-employer-manager' ),
-					'saved'          => __( 'Saved!', 'ai-job-employer-manager' ),
-					'error'          => __( 'An error occurred. Please try again.', 'ai-job-employer-manager' ),
-					'confirmDelete'  => __( 'Are you sure you want to delete this?', 'ai-job-employer-manager' ),
-					'locationDetect' => __( 'Detecting location...', 'ai-job-employer-manager' ),
-					'locationError'  => __( 'Could not detect location. Please enter manually.', 'ai-job-employer-manager' ),
-				),
-			)
-		);
+		// Make the job available as a global so the template and the asset
+		// localisation callback (enqueue_frontend_assets) can both access it.
+		global $ajem_current_job;
+		$ajem_current_job = $job;
 
-		// Render the job detail template.
-		echo $this->render_job_detail_for_job( $job ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		exit;
+		// Increment view counter (deduplicated per-IP via transients).
+		$job_posting->increment_views( (int) $job->id );
+
+		return AJEM_PLUGIN_DIR . 'templates/single-ajem-job.php';
 	}
 
 	/**
@@ -207,16 +179,19 @@ class AJEM_Public_Dashboard {
 			return '<p>' . esc_html__( 'Job not found.', 'ai-job-employer-manager' ) . '</p>';
 		}
 
-		return $this->render_job_detail_for_job( $job );
+		return static::render_job_detail_for_job( $job );
 	}
 
 	/**
 	 * Render the job detail template for a given job object.
 	 *
+	 * Made public static so it can be called from `templates/single-ajem-job.php`
+	 * without needing to instantiate AJEM_Public_Dashboard.
+	 *
 	 * @param object $job Job DB row.
 	 * @return string Rendered HTML.
 	 */
-	private function render_job_detail_for_job( object $job ): string {
+	public static function render_job_detail_for_job( object $job ): string {
 		$profile  = new AJEM_Employer_Profile();
 		$employer = $profile->get_by_id( (int) $job->employer_id );
 

@@ -35,6 +35,78 @@ class AJEM_Activator {
 	}
 
 	/**
+	 * Run upgrade routines (called when AJEM_DB_VERSION changes).
+	 *
+	 * - Applies any new columns via dbDelta.
+	 * - Creates WP posts for existing jobs that don't have one yet.
+	 *
+	 * @return void
+	 */
+	public static function upgrade(): void {
+		self::create_tables();            // dbDelta adds new columns (e.g. wp_post_id) to existing tables.
+		self::sync_existing_jobs_to_wp(); // Create WP posts for jobs that have no wp_post_id.
+	}
+
+	/**
+	 * Create WP posts of type `ajem_job` for all existing jobs that are not
+	 * yet linked to a WP post.  This is idempotent: it only processes rows
+	 * where `wp_post_id IS NULL` or `wp_post_id = 0`.
+	 *
+	 * @return void
+	 */
+	public static function sync_existing_jobs_to_wp(): void {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'job_listings';
+
+		// Guard: if post type isn't registered yet, skip — we'll retry next request.
+		if ( ! post_type_exists( 'ajem_job' ) ) {
+			return;
+		}
+
+		$jobs = $wpdb->get_results(
+			"SELECT id, employer_id, job_title, job_slug, job_description, status, city
+			 FROM `{$table}`
+			 WHERE wp_post_id IS NULL OR wp_post_id = 0"
+		);
+
+		if ( empty( $jobs ) ) {
+			return;
+		}
+
+		foreach ( $jobs as $job ) {
+			$post_status = ( 'active' === $job->status ) ? 'publish' : 'draft';
+
+			$post_id = wp_insert_post(
+				array(
+					'post_title'   => wp_strip_all_tags( $job->job_title ),
+					'post_content' => $job->job_description ?? '',
+					'post_status'  => $post_status,
+					'post_type'    => 'ajem_job',
+					'meta_input'   => array(
+						'_ajem_job_id'        => (int) $job->id,
+						'_ajem_job_slug'      => $job->job_slug,
+						'_ajem_job_status'    => $job->status,
+						'_ajem_job_city'      => $job->city,
+						'_ajem_employer_id'   => (int) $job->employer_id,
+					),
+				),
+				true
+			);
+
+			if ( $post_id && ! is_wp_error( $post_id ) ) {
+				$wpdb->update(
+					$table,
+					array( 'wp_post_id' => $post_id ),
+					array( 'id' => (int) $job->id ),
+					array( '%d' ),
+					array( '%d' )
+				);
+			}
+		}
+	}
+
+	/**
 	 * Run deactivation routines.
 	 *
 	 * @return void
@@ -93,6 +165,7 @@ class AJEM_Activator {
 		$sql_listings   = "CREATE TABLE {$table_listings} (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			employer_id BIGINT UNSIGNED NOT NULL,
+			wp_post_id BIGINT UNSIGNED DEFAULT NULL,
 			job_title VARCHAR(255) DEFAULT '' NOT NULL,
 			job_slug VARCHAR(255) DEFAULT '' NOT NULL,
 			job_description LONGTEXT,
@@ -120,6 +193,7 @@ class AJEM_Activator {
 			PRIMARY KEY (id),
 			UNIQUE KEY job_slug (job_slug),
 			KEY employer_id (employer_id),
+			KEY wp_post_id (wp_post_id),
 			KEY status (status),
 			KEY job_type (job_type),
 			KEY industry (industry),

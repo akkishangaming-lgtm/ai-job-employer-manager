@@ -73,6 +73,9 @@ class AJEM_Job_Posting {
 
 		$job_id = (int) $wpdb->insert_id;
 
+		// Create a corresponding WP post so the job is visible in WP admin.
+		$this->sync_to_wp_post( $job_id, $prepared );
+
 		do_action( 'ajem_job_created', $job_id, $employer_id, $prepared );
 
 		return $job_id;
@@ -124,6 +127,8 @@ class AJEM_Job_Posting {
 		);
 
 		if ( false !== $result ) {
+			// Keep the WP post in sync.
+			$this->sync_to_wp_post( $job_id, array_merge( $prepared, array( 'employer_id' => $employer_id ) ) );
 			do_action( 'ajem_job_updated', $job_id, $employer_id, $prepared );
 		}
 
@@ -165,6 +170,8 @@ class AJEM_Job_Posting {
 		);
 
 		if ( false !== $result ) {
+			// Keep WP post status in sync.
+			$this->sync_to_wp_post( $job_id, array( 'status' => $status, 'employer_id' => $employer_id ) );
 			do_action( 'ajem_job_status_changed', $job_id, $status, $job->status );
 		}
 
@@ -196,6 +203,14 @@ class AJEM_Job_Posting {
 			array( 'id' => $job_id, 'employer_id' => $employer_id ),
 			array( '%d', '%d' )
 		);
+
+		if ( false !== $result ) {
+			// Move the linked WP post to Trash.
+			$wp_post_id = $this->get_wp_post_id( $job_id );
+			if ( $wp_post_id ) {
+				wp_trash_post( $wp_post_id );
+			}
+		}
 
 		return false !== $result;
 	}
@@ -363,6 +378,83 @@ class AJEM_Job_Posting {
 		}
 
 		return $slug;
+	}
+
+	/**
+	 * Get the WP post ID linked to a job.
+	 *
+	 * @param int $job_id Job ID in our custom table.
+	 * @return int WP post ID, or 0 if not found.
+	 */
+	public function get_wp_post_id( int $job_id ): int {
+		global $wpdb;
+		$table = $wpdb->prefix . 'job_listings';
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT wp_post_id FROM `{$table}` WHERE id = %d LIMIT 1", $job_id )
+		);
+	}
+
+	/**
+	 * Create or update the WP post (`ajem_job` CPT) that mirrors a job row.
+	 *
+	 * This gives administrators visibility of all jobs in the WP admin dashboard
+	 * (Posts → All Jobs) without changing the public URL routing.
+	 *
+	 * @param int   $job_id   Job ID in our custom table.
+	 * @param array $data     Partial job data (subset that was just saved).
+	 * @return void
+	 */
+	private function sync_to_wp_post( int $job_id, array $data ): void {
+		// CPT must exist; skip gracefully if it hasn't been registered yet.
+		if ( ! post_type_exists( 'ajem_job' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'job_listings';
+
+		// Fetch the full row so we always have all fields.
+		$job = $this->get_by_id( $job_id );
+		if ( ! $job ) {
+			return;
+		}
+
+		$post_status   = ( 'active' === $job->status ) ? 'publish' : 'draft';
+		$existing_post = (int) $job->wp_post_id;
+
+		$post_arr = array(
+			'post_title'   => wp_strip_all_tags( $job->job_title ),
+			'post_content' => $job->job_description ?? '',
+			'post_status'  => $post_status,
+			'post_type'    => 'ajem_job',
+			'meta_input'   => array(
+				'_ajem_job_id'      => $job_id,
+				'_ajem_job_slug'    => $job->job_slug,
+				'_ajem_job_status'  => $job->status,
+				'_ajem_job_city'    => $job->city,
+				'_ajem_employer_id' => (int) $job->employer_id,
+			),
+		);
+
+		if ( $existing_post > 0 && get_post( $existing_post ) ) {
+			// Update existing WP post.
+			$post_arr['ID'] = $existing_post;
+			wp_update_post( $post_arr );
+		} else {
+			// Create a new WP post and store its ID back in our table.
+			$post_id = wp_insert_post( $post_arr, true );
+
+			if ( $post_id && ! is_wp_error( $post_id ) ) {
+				$wpdb->update(
+					$table,
+					array( 'wp_post_id' => $post_id ),
+					array( 'id' => $job_id ),
+					array( '%d' ),
+					array( '%d' )
+				);
+			}
+		}
 	}
 
 	/**
