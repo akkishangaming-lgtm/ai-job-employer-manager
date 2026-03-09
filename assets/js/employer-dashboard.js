@@ -230,7 +230,7 @@
 
 	// ── Logo Upload ──────────────────────────────────────────────────────────
 
-	// Preview selected logo image immediately.
+	// Preview selected logo image immediately, then upload via admin-ajax.php.
 	$(document).on('change', '#ajemLogoFile', function () {
 		var file = this.files && this.files[0];
 		if (!file) { return; }
@@ -240,44 +240,49 @@
 		var $placeholder = $('#ajemLogoPlaceholder');
 		var $status      = $('#ajemLogoUploadStatus');
 
-		// Show local preview.
+		// Show instant local preview while upload happens in the background.
 		var reader = new FileReader();
 		reader.onload = function (ev) {
 			if ($img.length) {
 				$img.attr('src', ev.target.result);
 			} else {
-				$placeholder.hide();
-				$('<img>').attr({ id: 'ajemLogoImg', src: ev.target.result, alt: '' }).appendTo($preview);
+				if ($placeholder.length) { $placeholder.hide(); }
+				$('<img>').attr({ id: 'ajemLogoImg', src: ev.target.result, alt: '' })
+					.css({ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' })
+					.appendTo($preview);
 			}
 		};
 		reader.readAsDataURL(file);
 
-		// Upload to server.
-		$status.text('Uploading…');
+		// Upload to server via admin-ajax.php (most reliable for WP file uploads).
+		$status.css('color', '').text('Uploading…');
+
 		var formData = new FormData();
-		formData.append('logo', file);
+		formData.append('action', 'ajem_upload_logo');
+		formData.append('nonce',  ajemData.nonce);
+		formData.append('logo',   file);
 
 		$.ajax({
-			url:         ajemData.restUrl + 'employer/upload-logo',
+			url:         ajemData.ajaxUrl,
 			method:      'POST',
 			data:        formData,
 			processData: false,
-			contentType: false,
-			beforeSend:  function (xhr) {
-				xhr.setRequestHeader('X-WP-Nonce', ajemData.restNonce);
-			}
+			contentType: false
 		})
 		.done(function (res) {
 			if (res.success) {
-				$status.css('color', 'var(--ajem-green)').text('Logo saved!');
-				setTimeout(function () { $status.text(''); }, 3000);
+				$status.css('color', 'var(--ajem-green)').text('✅ Logo saved!');
+				setTimeout(function () { $status.text(''); }, 3500);
 			} else {
-				$status.css('color', 'var(--ajem-red)').text(res.message || 'Upload failed.');
+				var msg = (res.data && res.data.message) ? res.data.message : 'Upload failed.';
+				$status.css('color', 'var(--ajem-red)').text('⚠ ' + msg);
 			}
 		})
 		.fail(function (xhr) {
-			var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Upload failed.';
-			$status.css('color', 'var(--ajem-red)').text(msg);
+			var msg = (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message)
+				? xhr.responseJSON.data.message
+				: 'Upload failed. Please try again.';
+			$status.css('color', 'var(--ajem-red)').text('⚠ ' + msg);
 		});
 	});
 

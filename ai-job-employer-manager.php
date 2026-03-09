@@ -131,6 +131,44 @@ final class AI_Job_Employer_Manager {
 		// Enqueue assets.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+
+		// Logo upload via standard AJAX (most reliable for multipart file uploads).
+		add_action( 'wp_ajax_ajem_upload_logo', array( $this, 'ajax_upload_logo' ) );
+	}
+
+	/**
+	 * Handle company logo upload via wp_ajax (admin-ajax.php).
+	 *
+	 * Accepts a multipart file (field name: 'logo') plus an 'ajem_nonce' nonce.
+	 * Stores the image in the WP media library and saves the URL to the
+	 * employer profile row.
+	 *
+	 * @return void  Outputs JSON and exits.
+	 */
+	public function ajax_upload_logo(): void {
+		check_ajax_referer( 'ajem_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'ajem_manage_jobs' ) && ! current_user_can( 'administrator' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'ai-job-employer-manager' ) ), 403 );
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput — validated below via upload_logo().
+		if ( empty( $_FILES['logo'] ) || 0 !== (int) ( $_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE ) ) {
+			wp_send_json_error( array( 'message' => __( 'No file received or upload error.', 'ai-job-employer-manager' ) ), 400 );
+		}
+
+		$profile  = new AJEM_Employer_Profile();
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$logo_url = $profile->upload_logo( $_FILES['logo'], get_current_user_id() );
+
+		if ( is_wp_error( $logo_url ) ) {
+			wp_send_json_error( array( 'message' => $logo_url->get_error_message() ), 400 );
+		}
+
+		// Persist the URL in the employer profile (upsert — safe for new profiles).
+		$profile->save( get_current_user_id(), array( 'company_logo' => $logo_url ) );
+
+		wp_send_json_success( array( 'logo_url' => $logo_url ) );
 	}
 
 	/**

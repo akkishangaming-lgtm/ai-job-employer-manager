@@ -221,6 +221,7 @@
 .ajem-badge-closed       { background: #f3f4f6; color: var(--ajem-gray); }
 .ajem-badge-draft        { background: #e0e7ff; color: #4f46e5; }
 .ajem-badge-type         { background: var(--ajem-accent); color: var(--ajem-primary); }
+.ajem-badge-featured     { background: #fef3c7; color: var(--ajem-yellow); }
 
 /* Application status badges */
 .ajem-badge-applied      { background: #dbeafe; color: var(--ajem-blue); }
@@ -621,7 +622,160 @@
 	color:       var(--ajem-text-light);
 }
 
-/* Job Cards */
+/* ── Job Listings Table ───────────────────────────────────────────────────── */
+.ajem-jobs-table {
+	width:           100%;
+	border-collapse: collapse;
+	font-size:       14px;
+}
+
+.ajem-jobs-table thead th {
+	padding:        8px 12px;
+	text-align:     left;
+	font-size:      11px;
+	font-weight:    700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color:          var(--ajem-text-light);
+	border-bottom:  2px solid var(--ajem-border);
+	background:     var(--ajem-bg);
+}
+
+.ajem-jobs-table tbody .ajem-jt-row {
+	background:  var(--ajem-white);
+	border-bottom: 1px solid var(--ajem-border);
+	transition:  background var(--ajem-transition), box-shadow var(--ajem-transition);
+}
+
+.ajem-jobs-table tbody .ajem-jt-row:last-child {
+	border-bottom: none;
+}
+
+.ajem-jobs-table tbody .ajem-jt-row:hover {
+	background:  var(--ajem-accent);
+}
+
+.ajem-jobs-table tbody .ajem-jt-row.ajem-jt-featured {
+	border-left: 3px solid var(--ajem-yellow);
+}
+
+.ajem-jobs-table td {
+	padding:        14px 12px;
+	vertical-align: top;
+}
+
+/* Job column */
+.ajem-jt-col-job     { width: 30%; }
+.ajem-jt-col-details { width: 22%; }
+.ajem-jt-col-desc    { width: 30%; }
+.ajem-jt-col-action  { width: 18%; }
+
+.ajem-jt-job-inner {
+	display:     flex;
+	gap:         12px;
+	align-items: flex-start;
+}
+
+.ajem-jt-logo {
+	width:         44px;
+	height:        44px;
+	object-fit:    contain;
+	border:        1px solid var(--ajem-border);
+	border-radius: var(--ajem-radius);
+	flex-shrink:   0;
+}
+
+.ajem-jt-logo-placeholder {
+	width:           44px;
+	height:          44px;
+	background:      var(--ajem-primary);
+	color:           #fff;
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	font-size:       18px;
+	font-weight:     700;
+	border-radius:   var(--ajem-radius);
+	flex-shrink:     0;
+}
+
+.ajem-jt-job-meta {
+	flex:      1;
+	min-width: 0;
+}
+
+.ajem-jt-title {
+	display:         block;
+	font-weight:     700;
+	font-size:       15px;
+	color:           var(--ajem-text);
+	text-decoration: none;
+	margin-bottom:   3px;
+	line-height:     1.3;
+}
+
+.ajem-jt-title:hover {
+	color: var(--ajem-primary);
+}
+
+.ajem-jt-company {
+	font-size:   13px;
+	color:       var(--ajem-text-light);
+	margin-bottom: 3px;
+}
+
+.ajem-jt-location {
+	font-size: 12px;
+	color:     var(--ajem-text-light);
+}
+
+/* Details column */
+.ajem-jt-salary {
+	font-size:   13px;
+	color:       var(--ajem-secondary);
+	font-weight: 600;
+	margin-top:  6px;
+}
+
+.ajem-jt-deadline {
+	font-size:  12px;
+	color:      var(--ajem-red, #ef4444);
+	margin-top: 4px;
+}
+
+.ajem-jt-posted {
+	font-size:  12px;
+	color:      var(--ajem-text-light);
+	margin-top: 4px;
+}
+
+.ajem-jt-skills {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       4px;
+	margin-top: 8px;
+}
+
+/* Description column */
+.ajem-jt-desc-text {
+	margin:      0;
+	font-size:   13px;
+	color:       var(--ajem-text-light);
+	line-height: 1.55;
+}
+
+.ajem-jt-no-desc {
+	color: var(--ajem-border);
+}
+
+/* Action column */
+.ajem-jt-action {
+	display:        flex;
+	flex-direction: column;
+	gap:            8px;
+}
+
+/* ── Job Cards (kept for backward compatibility) ──────────────────────────── */
 .ajem-job-card {
 	background:    var(--ajem-white);
 	border:        1px solid var(--ajem-border);
@@ -1562,6 +1716,38 @@
 	.ajem-logo-upload-wrap {
 		flex-direction: column;
 		align-items:    flex-start;
+	}
+
+	/* Job listings table → stack on mobile */
+	.ajem-jobs-table thead {
+		display: none;
+	}
+
+	.ajem-jobs-table tbody .ajem-jt-row {
+		display:       block;
+		margin-bottom: 12px;
+		border:        1px solid var(--ajem-border);
+		border-radius: var(--ajem-radius);
+		background:    var(--ajem-white);
+		box-shadow:    var(--ajem-shadow);
+		overflow:      hidden;
+	}
+
+	.ajem-jobs-table td {
+		display: block;
+		padding: 10px 14px;
+	}
+
+	.ajem-jt-action {
+		flex-direction: row;
+		gap: 8px;
+	}
+
+	.ajem-jt-col-job,
+	.ajem-jt-col-details,
+	.ajem-jt-col-desc,
+	.ajem-jt-col-action {
+		width: auto;
 	}
 }
 
