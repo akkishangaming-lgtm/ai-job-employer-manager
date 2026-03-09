@@ -139,118 +139,72 @@ $city         = sanitize_text_field( wp_unslash( $_GET['city'] ?? '' ) );
 				</div>
 			<?php else : ?>
 
-				<table class="ajem-jobs-table">
-					<thead>
-						<tr>
-							<th class="ajem-jt-col-job"><?php esc_html_e( 'Job', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-details"><?php esc_html_e( 'Details', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-desc"><?php esc_html_e( 'Description', 'ai-job-employer-manager' ); ?></th>
-							<th class="ajem-jt-col-action"><?php esc_html_e( 'Action', 'ai-job-employer-manager' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-					<?php foreach ( $jobs as $job ) :
-						// Salary string.
-						$jt_sal = '';
-						if ( $job->salary_min || $job->salary_max ) {
-							$jt_curr = $job->salary_currency ?? 'INR';
-							$jt_min  = $job->salary_min ? number_format( (float) $job->salary_min ) : '';
-							$jt_max  = $job->salary_max ? number_format( (float) $job->salary_max ) : '';
-							$jt_sal  = $jt_curr . ' ' . $jt_min . ( $jt_min && $jt_max ? ' – ' . $jt_max : $jt_max );
-						}
-						// Description excerpt — strip HTML tags, limit to 130 chars.
-						$jt_desc_raw     = wp_strip_all_tags( $job->job_description ?? '' );
-						$jt_desc_excerpt = mb_strlen( $jt_desc_raw ) > 130
-							? mb_substr( $jt_desc_raw, 0, 130 ) . '…'
-							: $jt_desc_raw;
-						// Job type label.
-						$jt_type = str_replace( '_', ' ', ucfirst( $job->job_type ?? '' ) );
-						// Job URL.
-						$jt_url  = esc_url( site_url( '/jobs/' . $job->job_slug ) );
-					?>
-					<tr class="ajem-jt-row<?php echo $job->is_featured ? ' ajem-jt-featured' : ''; ?>">
+				<?php foreach ( $jobs as $job ) :
+					// Salary string.
+					$jt_sal = '';
+					if ( $job->salary_min || $job->salary_max ) {
+						$jt_curr = $job->salary_currency ?? 'INR';
+						$jt_min  = $job->salary_min ? number_format( (float) $job->salary_min ) : '';
+						$jt_max  = $job->salary_max ? number_format( (float) $job->salary_max ) : '';
+						$jt_sal  = $jt_curr . ' ' . $jt_min . ( $jt_min && $jt_max ? ' – ' . $jt_max : $jt_max );
+					}
+					// Job type label.
+					$jt_type = str_replace( '_', ' ', ucfirst( $job->job_type ?? '' ) );
+					// Job URL.
+					$jt_url = esc_url( site_url( '/jobs/' . $job->job_slug ) );
+				?>
+				<div class="ajem-job-card<?php echo $job->is_featured ? ' ajem-job-card-featured' : ''; ?>">
 
-						<!-- Job column: logo + title + company + location -->
-						<td class="ajem-jt-job">
-							<div class="ajem-jt-job-inner">
-								<?php if ( ! empty( $job->company_logo ) ) : ?>
-									<img src="<?php echo esc_url( $job->company_logo ); ?>"
-										alt="<?php echo esc_attr( $job->company_name ?? '' ); ?>"
-										class="ajem-jt-logo">
-								<?php else : ?>
-									<div class="ajem-jt-logo-placeholder">
-										<?php echo esc_html( mb_strtoupper( mb_substr( $job->company_name ?? 'J', 0, 1 ) ) ); ?>
-									</div>
-								<?php endif; ?>
-								<div class="ajem-jt-job-meta">
-									<a href="<?php echo $jt_url; ?>" class="ajem-jt-title">
-										<?php echo esc_html( $job->job_title ); ?>
-									</a>
-									<?php if ( ! empty( $job->company_name ) ) : ?>
-										<div class="ajem-jt-company"><?php echo esc_html( $job->company_name ); ?></div>
-									<?php endif; ?>
-									<?php if ( $job->city ) : ?>
-										<div class="ajem-jt-location">📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></div>
-									<?php endif; ?>
-									<?php if ( $job->is_featured ) : ?>
-										<span class="ajem-badge ajem-badge-featured"><?php esc_html_e( 'Featured', 'ai-job-employer-manager' ); ?></span>
-									<?php endif; ?>
-								</div>
+					<?php if ( $job->is_featured ) : ?>
+						<div class="ajem-featured-ribbon"><?php esc_html_e( 'Featured', 'ai-job-employer-manager' ); ?></div>
+					<?php endif; ?>
+
+					<div class="ajem-job-card-header">
+
+						<!-- Logo / avatar -->
+						<?php if ( ! empty( $job->company_logo ) ) : ?>
+							<img src="<?php echo esc_url( $job->company_logo ); ?>"
+								alt="<?php echo esc_attr( $job->company_name ?? '' ); ?>"
+								class="ajem-job-card-logo">
+						<?php else : ?>
+							<div class="ajem-job-card-logo-placeholder">
+								<?php echo esc_html( mb_strtoupper( mb_substr( $job->company_name ?? 'J', 0, 1 ) ) ); ?>
 							</div>
-						</td>
+						<?php endif; ?>
 
-						<!-- Details column: type + salary + deadline + posted -->
-						<td class="ajem-jt-details">
-							<?php if ( $jt_type ) : ?>
-								<span class="ajem-badge ajem-badge-type"><?php echo esc_html( $jt_type ); ?></span>
+						<div class="ajem-job-card-info">
+							<h3 class="ajem-job-card-title">
+								<a href="<?php echo $jt_url; ?>"><?php echo esc_html( $job->job_title ); ?></a>
+							</h3>
+							<?php if ( ! empty( $job->company_name ) ) : ?>
+								<div class="ajem-job-card-company"><?php echo esc_html( $job->company_name ); ?></div>
 							<?php endif; ?>
-							<?php if ( $jt_sal ) : ?>
-								<div class="ajem-jt-salary">💰 <?php echo esc_html( $jt_sal ); ?></div>
-							<?php endif; ?>
-							<?php if ( $job->application_deadline ) : ?>
-								<div class="ajem-jt-deadline">⏰ <?php
-									printf(
-										/* translators: %s: deadline date */
-										esc_html__( 'Deadline: %s', 'ai-job-employer-manager' ),
-										esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) )
-									);
-								?></div>
-							<?php endif; ?>
-							<div class="ajem-jt-posted">🕒 <?php echo esc_html( human_time_diff( strtotime( $job->created_at ), time() ) . ' ' . __( 'ago', 'ai-job-employer-manager' ) ); ?></div>
-							<?php if ( ! empty( $job->required_skills_array ) ) : ?>
-								<div class="ajem-jt-skills">
-									<?php foreach ( array_slice( $job->required_skills_array, 0, 4 ) as $skill ) : ?>
-										<span class="ajem-skill-tag"><?php echo esc_html( $skill ); ?></span>
-									<?php endforeach; ?>
-								</div>
-							<?php endif; ?>
-						</td>
+							<div class="ajem-job-card-meta">
+								<?php if ( $job->city ) : ?>
+									<span class="ajem-meta-chip">📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></span>
+								<?php endif; ?>
+								<?php if ( $jt_type ) : ?>
+									<span class="ajem-badge ajem-badge-type"><?php echo esc_html( $jt_type ); ?></span>
+								<?php endif; ?>
+								<?php if ( $jt_sal ) : ?>
+									<span class="ajem-salary-chip">💰 <?php echo esc_html( $jt_sal ); ?></span>
+								<?php endif; ?>
+							</div>
+						</div>
 
-						<!-- Description column -->
-						<td class="ajem-jt-desc">
-							<?php if ( $jt_desc_excerpt ) : ?>
-								<p class="ajem-jt-desc-text"><?php echo esc_html( $jt_desc_excerpt ); ?></p>
-							<?php else : ?>
-								<span class="ajem-jt-no-desc">—</span>
-							<?php endif; ?>
-						</td>
+					</div><!-- /.ajem-job-card-header -->
 
-						<!-- Action column: View + Apply -->
-						<td class="ajem-jt-action">
-							<a href="<?php echo $jt_url; ?>"
-								class="ajem-btn ajem-btn-sm ajem-btn-primary ajem-btn-full">
-								<?php esc_html_e( 'View Job', 'ai-job-employer-manager' ); ?>
-							</a>
-							<a href="<?php echo $jt_url; ?>?apply=1"
-								class="ajem-btn ajem-btn-sm ajem-btn-outline ajem-btn-full">
-								📝 <?php esc_html_e( 'Apply', 'ai-job-employer-manager' ); ?>
-							</a>
-						</td>
+					<div class="ajem-job-card-footer">
+						<span class="ajem-job-date">
+							<?php echo esc_html( human_time_diff( strtotime( $job->created_at ), time() ) . ' ' . __( 'ago', 'ai-job-employer-manager' ) ); ?>
+						</span>
+						<a href="<?php echo $jt_url; ?>" class="ajem-btn ajem-btn-sm ajem-btn-primary">
+							<?php esc_html_e( 'View Job', 'ai-job-employer-manager' ); ?>
+						</a>
+					</div><!-- /.ajem-job-card-footer -->
 
-					</tr>
-					<?php endforeach; ?>
-					</tbody>
-				</table>
+				</div><!-- /.ajem-job-card -->
+				<?php endforeach; ?>
 
 				<!-- Pagination -->
 				<?php if ( $pages > 1 ) : ?>

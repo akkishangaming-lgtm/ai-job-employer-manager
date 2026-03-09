@@ -220,7 +220,7 @@
 .ajem-badge-expired      { background: #fee2e2; color: var(--ajem-red); }
 .ajem-badge-closed       { background: #f3f4f6; color: var(--ajem-gray); }
 .ajem-badge-draft        { background: #e0e7ff; color: #4f46e5; }
-.ajem-badge-type         { background: var(--ajem-accent); color: var(--ajem-primary); }
+.ajem-badge-type         { background: var(--ajem-primary); color: #fff; }
 .ajem-badge-featured     { background: #fef3c7; color: var(--ajem-yellow); }
 
 /* Application status badges */
@@ -897,14 +897,15 @@
 }
 
 .ajem-job-card-footer {
-	display:       flex;
-	align-items:   center;
-	gap:           16px;
-	margin-top:    14px;
-	padding-top:   14px;
-	border-top:    1px solid var(--ajem-border);
-	font-size:     13px;
-	color:         var(--ajem-text-light);
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             16px;
+	margin-top:      14px;
+	padding-top:     14px;
+	border-top:      1px solid var(--ajem-border);
+	font-size:       13px;
+	color:           var(--ajem-text-light);
 }
 
 .ajem-job-date,
