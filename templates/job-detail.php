@@ -5,7 +5,9 @@
  * Variables available:
  * - $job          (object)      — job listing row
  * - $employer     (object|null) — employer profile row
- * - $related_jobs (array)       — related job objects
+ * - $related_jobs (array)       — related jobs (same industry)
+ * - $city_jobs    (array)       — jobs in the same city
+ * - $nearby_jobs  (array)       — jobs within 50 km by Haversine
  *
  * @package AI_Job_Employer_Manager
  * @since   1.0.0
@@ -24,98 +26,224 @@ $login_url    = esc_url( wp_login_url( $job_url . '?apply=1' ) );
 $skills       = $job->required_skills_array ?? array();
 
 // Format WhatsApp message.
-$wa_message   = rawurlencode( sprintf(
-	/* translators: %s: job title */
-	__( 'Hi, I am interested in the %s position at your company.', 'ai-job-employer-manager' ),
-	$job->job_title
-) );
+$wa_message   = rawurlencode(
+	sprintf(
+		/* translators: %s: job title */
+		__( 'Hi, I am interested in the %s position at your company.', 'ai-job-employer-manager' ),
+		$job->job_title
+	)
+);
 $wa_number    = $employer && $employer->whatsapp_number ? $employer->whatsapp_number : '';
 $phone_number = $employer && $employer->contact_phone ? $employer->contact_phone : '';
+
+// Salary string helper.
+$salary_str = '';
+if ( $job->salary_min || $job->salary_max ) {
+	$currency   = $job->salary_currency ?? 'INR';
+	$sal_min    = $job->salary_min ? number_format( (float) $job->salary_min ) : '';
+	$sal_max    = $job->salary_max ? number_format( (float) $job->salary_max ) : '';
+	$salary_str = $currency . ' ' . $sal_min . ( $sal_min && $sal_max ? ' – ' . $sal_max : $sal_max ) . ' / mo';
+}
+
+// Job type label.
+$type_label = esc_html( str_replace( '_', ' ', ucwords( str_replace( '_', ' ', $job->job_type ?? '' ) ) ) );
+
+// Posted date.
+$posted_diff = human_time_diff( strtotime( $job->created_at ), time() );
+
+// Company initial fallback.
+$company_initial = mb_strtoupper( mb_substr( $employer ? $employer->company_name : 'J', 0, 1 ) );
 ?>
 
 <div class="ajem-job-detail-page">
-	<div class="ajem-job-detail-container">
 
-		<!-- Main Content -->
-		<article class="ajem-job-detail-main">
+	<!-- ── Header Card ───────────────────────────────────────────────────── -->
+	<div class="ajem-jd-header-card">
+		<div class="ajem-jd-header-inner">
 
-			<!-- Job Header -->
-			<div class="ajem-job-detail-header">
+			<!-- Logo / Initial -->
+			<div class="ajem-jd-logo-wrap">
 				<?php if ( $employer && $employer->company_logo ) : ?>
-					<img src="<?php echo esc_url( $employer->company_logo ); ?>" alt="<?php echo esc_attr( $employer->company_name ); ?>" class="ajem-job-detail-logo">
+					<img src="<?php echo esc_url( $employer->company_logo ); ?>"
+						alt="<?php echo esc_attr( $employer->company_name ); ?>"
+						class="ajem-jd-logo">
+				<?php else : ?>
+					<div class="ajem-jd-logo-placeholder"><?php echo esc_html( $company_initial ); ?></div>
 				<?php endif; ?>
+			</div>
 
-				<div class="ajem-job-detail-heading">
-					<h1 class="ajem-job-detail-title"><?php echo esc_html( $job->job_title ); ?></h1>
-					<div class="ajem-job-detail-company"><?php echo esc_html( $employer ? $employer->company_name : '' ); ?></div>
-					<div class="ajem-job-detail-meta">
-						<?php if ( $job->city ) : ?>
-							<span class="ajem-meta-chip">📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></span>
-						<?php endif; ?>
+			<!-- Title / Company / Meta chips -->
+			<div class="ajem-jd-heading">
+				<h1 class="ajem-jd-title"><?php echo esc_html( $job->job_title ); ?></h1>
 
-						<span class="ajem-badge ajem-badge-type"><?php echo esc_html( str_replace( '_', ' ', ucfirst( $job->job_type ) ) ); ?></span>
-
-						<?php if ( $job->industry ) : ?>
-							<span class="ajem-meta-chip">🏭 <?php echo esc_html( $job->industry ); ?></span>
-						<?php endif; ?>
-
-						<?php if ( $job->experience_required ) : ?>
-							<span class="ajem-meta-chip">💼 <?php echo esc_html( $job->experience_required ); ?></span>
-						<?php endif; ?>
-
-						<?php if ( $job->education_required ) : ?>
-							<span class="ajem-meta-chip">🎓 <?php echo esc_html( $job->education_required ); ?></span>
-						<?php endif; ?>
-
-						<?php if ( $job->salary_min || $job->salary_max ) : ?>
-							<span class="ajem-meta-chip ajem-salary-chip">
-								💰 <?php echo esc_html( $job->salary_currency ?? 'INR' ); ?>
-								<?php echo $job->salary_min ? esc_html( number_format( (float) $job->salary_min ) ) : ''; ?>
-								<?php echo ( $job->salary_min && $job->salary_max ) ? ' — ' : ''; ?>
-								<?php echo $job->salary_max ? esc_html( number_format( (float) $job->salary_max ) ) . ' / mo' : ''; ?>
-							</span>
-						<?php endif; ?>
-
-						<?php if ( $job->application_deadline ) : ?>
-							<span class="ajem-meta-chip ajem-deadline-chip">⏰ <?php echo esc_html__( 'Apply by:', 'ai-job-employer-manager' ) . ' ' . esc_html( $job->application_deadline ); ?></span>
+				<?php if ( $employer ) : ?>
+					<div class="ajem-jd-company">
+						<?php if ( $employer->company_website ) : ?>
+							<a href="<?php echo esc_url( $employer->company_website ); ?>" target="_blank" rel="noopener noreferrer">
+								<?php echo esc_html( $employer->company_name ); ?>
+							</a>
+						<?php else : ?>
+							<?php echo esc_html( $employer->company_name ); ?>
 						<?php endif; ?>
 					</div>
+				<?php endif; ?>
+
+				<div class="ajem-jd-meta-chips">
+					<?php if ( $job->city ) : ?>
+						<span class="ajem-meta-chip">📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></span>
+					<?php endif; ?>
+
+					<?php if ( $type_label ) : ?>
+						<span class="ajem-badge ajem-badge-type"><?php echo esc_html( $type_label ); ?></span>
+					<?php endif; ?>
+
+					<?php if ( $job->industry ) : ?>
+						<span class="ajem-meta-chip">🏭 <?php echo esc_html( $job->industry ); ?></span>
+					<?php endif; ?>
+
+					<?php if ( $salary_str ) : ?>
+						<span class="ajem-meta-chip ajem-salary-chip">💰 <?php echo esc_html( $salary_str ); ?></span>
+					<?php endif; ?>
+
+					<span class="ajem-meta-chip">🕒 <?php
+						/* translators: %s: time ago string */
+						printf( esc_html__( 'Posted %s ago', 'ai-job-employer-manager' ), esc_html( $posted_diff ) );
+					?></span>
+
+					<?php if ( $job->application_deadline ) : ?>
+						<span class="ajem-meta-chip ajem-deadline-chip">⏰ <?php
+							printf(
+								/* translators: %s: application deadline date */
+								esc_html__( 'Apply by %s', 'ai-job-employer-manager' ),
+								esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) )
+							);
+						?></span>
+					<?php endif; ?>
 				</div>
-			</div>
+			</div><!-- /.ajem-jd-heading -->
 
-			<!-- Action Buttons — Apply / Call / WhatsApp -->
-			<div class="ajem-job-action-buttons" id="ajemActionButtons">
+		</div><!-- /.ajem-jd-header-inner -->
+	</div><!-- /.ajem-jd-header-card -->
 
-				<!-- Apply Now -->
-				<?php if ( is_user_logged_in() ) : ?>
-					<button class="ajem-btn ajem-btn-apply ajem-btn-primary" id="ajemApplyBtn" data-job-id="<?php echo esc_attr( $job->id ); ?>">
-						📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
-					</button>
-				<?php else : ?>
-					<a href="<?php echo esc_url( $login_url ); ?>" class="ajem-btn ajem-btn-apply ajem-btn-primary">
-						📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
-					</a>
-				<?php endif; ?>
+	<!-- ── Action Buttons ────────────────────────────────────────────────── -->
+	<div class="ajem-jd-action-bar">
 
-				<!-- Call Employer -->
-				<?php if ( $phone_number ) : ?>
-					<a href="tel:+<?php echo esc_attr( preg_replace( '/\D/', '', $phone_number ) ); ?>" class="ajem-btn ajem-btn-call">
-						📞 <?php esc_html_e( 'Call Employer', 'ai-job-employer-manager' ); ?>
-					</a>
-				<?php endif; ?>
+		<!-- Apply Now -->
+		<?php if ( is_user_logged_in() ) : ?>
+			<button class="ajem-btn ajem-btn-apply ajem-btn-primary" id="ajemApplyBtn"
+				data-job-id="<?php echo esc_attr( $job->id ); ?>">
+				📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
+			</button>
+		<?php else : ?>
+			<a href="<?php echo esc_url( $login_url ); ?>" class="ajem-btn ajem-btn-apply ajem-btn-primary">
+				📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
+			</a>
+		<?php endif; ?>
 
-				<!-- WhatsApp -->
-				<?php if ( $wa_number ) : ?>
-					<a href="https://wa.me/<?php echo esc_attr( $wa_number ); ?>?text=<?php echo esc_attr( $wa_message ); ?>" class="ajem-btn ajem-btn-whatsapp" target="_blank" rel="noopener noreferrer">
-						💬 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?>
-					</a>
-				<?php endif; ?>
-			</div>
+		<!-- Call Employer -->
+		<?php if ( $phone_number ) : ?>
+			<a href="tel:+<?php echo esc_attr( preg_replace( '/\D/', '', $phone_number ) ); ?>"
+				class="ajem-btn ajem-btn-call">
+				📞 <?php esc_html_e( 'Call Employer', 'ai-job-employer-manager' ); ?>
+			</a>
+		<?php endif; ?>
+
+		<!-- WhatsApp -->
+		<?php if ( $wa_number ) : ?>
+			<a href="https://wa.me/<?php echo esc_attr( $wa_number ); ?>?text=<?php echo esc_attr( $wa_message ); ?>"
+				class="ajem-btn ajem-btn-whatsapp" target="_blank" rel="noopener noreferrer">
+				💬 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?>
+			</a>
+		<?php endif; ?>
+
+		<!-- Share -->
+		<button class="ajem-btn ajem-btn-outline ajem-btn-share" id="ajemCopyLink">
+			🔗 <?php esc_html_e( 'Copy Link', 'ai-job-employer-manager' ); ?>
+		</button>
+		<a href="https://wa.me/?text=<?php echo esc_attr( rawurlencode( $job->job_title . ' — ' . $job_url ) ); ?>"
+			class="ajem-btn ajem-btn-outline" target="_blank" rel="noopener noreferrer">
+			📲 <?php esc_html_e( 'Share', 'ai-job-employer-manager' ); ?>
+		</a>
+	</div><!-- /.ajem-jd-action-bar -->
+
+	<!-- ── Two-column Content ────────────────────────────────────────────── -->
+	<div class="ajem-jd-body">
+
+		<!-- Main Column -->
+		<div class="ajem-jd-main">
+
+			<!-- Job Highlights -->
+			<div class="ajem-jd-card ajem-jd-highlights">
+				<h3 class="ajem-jd-card-title"><?php esc_html_e( 'Job Highlights', 'ai-job-employer-manager' ); ?></h3>
+				<div class="ajem-highlights-grid">
+
+					<?php if ( $type_label ) : ?>
+						<div class="ajem-highlight-item">
+							<span class="ajem-highlight-icon">💼</span>
+							<div>
+								<div class="ajem-highlight-label"><?php esc_html_e( 'Job Type', 'ai-job-employer-manager' ); ?></div>
+								<div class="ajem-highlight-value"><?php echo esc_html( $type_label ); ?></div>
+							</div>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( $salary_str ) : ?>
+						<div class="ajem-highlight-item">
+							<span class="ajem-highlight-icon">💰</span>
+							<div>
+								<div class="ajem-highlight-label"><?php esc_html_e( 'Salary', 'ai-job-employer-manager' ); ?></div>
+								<div class="ajem-highlight-value ajem-highlight-salary"><?php echo esc_html( $salary_str ); ?></div>
+							</div>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( $job->experience_required ) : ?>
+						<div class="ajem-highlight-item">
+							<span class="ajem-highlight-icon">📈</span>
+							<div>
+								<div class="ajem-highlight-label"><?php esc_html_e( 'Experience', 'ai-job-employer-manager' ); ?></div>
+								<div class="ajem-highlight-value"><?php echo esc_html( $job->experience_required ); ?></div>
+							</div>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( $job->education_required ) : ?>
+						<div class="ajem-highlight-item">
+							<span class="ajem-highlight-icon">🎓</span>
+							<div>
+								<div class="ajem-highlight-label"><?php esc_html_e( 'Education', 'ai-job-employer-manager' ); ?></div>
+								<div class="ajem-highlight-value"><?php echo esc_html( $job->education_required ); ?></div>
+							</div>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( $job->application_deadline ) : ?>
+						<div class="ajem-highlight-item">
+							<span class="ajem-highlight-icon">📅</span>
+							<div>
+								<div class="ajem-highlight-label"><?php esc_html_e( 'Apply By', 'ai-job-employer-manager' ); ?></div>
+								<div class="ajem-highlight-value"><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) ); ?></div>
+							</div>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( $job->city ) : ?>
+						<div class="ajem-highlight-item">
+							<span class="ajem-highlight-icon">📍</span>
+							<div>
+								<div class="ajem-highlight-label"><?php esc_html_e( 'Location', 'ai-job-employer-manager' ); ?></div>
+								<div class="ajem-highlight-value"><?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></div>
+							</div>
+						</div>
+					<?php endif; ?>
+
+				</div><!-- /.ajem-highlights-grid -->
+			</div><!-- /.ajem-jd-highlights -->
 
 			<!-- Skills -->
 			<?php if ( ! empty( $skills ) ) : ?>
-				<div class="ajem-job-skills-section">
-					<h3><?php esc_html_e( 'Required Skills', 'ai-job-employer-manager' ); ?></h3>
+				<div class="ajem-jd-card">
+					<h3 class="ajem-jd-card-title"><?php esc_html_e( 'Required Skills', 'ai-job-employer-manager' ); ?></h3>
 					<div class="ajem-skills-list">
 						<?php foreach ( $skills as $skill ) : ?>
 							<span class="ajem-skill-tag"><?php echo esc_html( $skill ); ?></span>
@@ -125,32 +253,53 @@ $phone_number = $employer && $employer->contact_phone ? $employer->contact_phone
 			<?php endif; ?>
 
 			<!-- Job Description -->
-			<div class="ajem-job-description">
-				<h3><?php esc_html_e( 'Job Description', 'ai-job-employer-manager' ); ?></h3>
-				<div class="ajem-job-desc-content">
+			<div class="ajem-jd-card">
+				<h3 class="ajem-jd-card-title"><?php esc_html_e( 'Job Description', 'ai-job-employer-manager' ); ?></h3>
+				<div class="ajem-jd-desc-content">
 					<?php echo wp_kses_post( $job->job_description ); ?>
 				</div>
 			</div>
 
-			<!-- Share -->
-			<div class="ajem-share-section">
-				<h4><?php esc_html_e( 'Share this job', 'ai-job-employer-manager' ); ?></h4>
-				<button class="ajem-btn ajem-btn-sm" id="ajemCopyLink"><?php esc_html_e( '🔗 Copy Link', 'ai-job-employer-manager' ); ?></button>
-				<?php if ( $wa_number || true ) : ?>
-					<a href="https://wa.me/?text=<?php echo esc_attr( rawurlencode( $job->job_title . ' — ' . $job_url ) ); ?>" class="ajem-btn ajem-btn-sm ajem-btn-whatsapp" target="_blank" rel="noopener noreferrer"><?php esc_html_e( '📲 Share on WhatsApp', 'ai-job-employer-manager' ); ?></a>
+		</div><!-- /.ajem-jd-main -->
+
+		<!-- Sidebar Column -->
+		<aside class="ajem-jd-sidebar">
+
+			<!-- Quick Apply -->
+			<div class="ajem-sidebar-card ajem-apply-card">
+				<h4><?php esc_html_e( 'Interested in this job?', 'ai-job-employer-manager' ); ?></h4>
+				<?php if ( is_user_logged_in() ) : ?>
+					<button class="ajem-btn ajem-btn-primary ajem-btn-full" id="ajemApplyBtnSidebar"
+						data-job-id="<?php echo esc_attr( $job->id ); ?>">
+						📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
+					</button>
+				<?php else : ?>
+					<a href="<?php echo esc_url( $login_url ); ?>" class="ajem-btn ajem-btn-primary ajem-btn-full">
+						📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
+					</a>
+				<?php endif; ?>
+				<?php if ( $phone_number ) : ?>
+					<a href="tel:+<?php echo esc_attr( preg_replace( '/\D/', '', $phone_number ) ); ?>"
+						class="ajem-btn ajem-btn-call ajem-btn-full">
+						📞 <?php esc_html_e( 'Call', 'ai-job-employer-manager' ); ?>
+					</a>
+				<?php endif; ?>
+				<?php if ( $wa_number ) : ?>
+					<a href="https://wa.me/<?php echo esc_attr( $wa_number ); ?>?text=<?php echo esc_attr( $wa_message ); ?>"
+						class="ajem-btn ajem-btn-whatsapp ajem-btn-full" target="_blank" rel="noopener noreferrer">
+						💬 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?>
+					</a>
 				<?php endif; ?>
 			</div>
-		</article>
-
-		<!-- Sidebar -->
-		<aside class="ajem-job-detail-sidebar">
 
 			<!-- Company Info -->
 			<?php if ( $employer ) : ?>
 				<div class="ajem-sidebar-card">
 					<h4><?php esc_html_e( 'About the Company', 'ai-job-employer-manager' ); ?></h4>
 					<?php if ( $employer->company_logo ) : ?>
-						<img src="<?php echo esc_url( $employer->company_logo ); ?>" alt="<?php echo esc_attr( $employer->company_name ); ?>" class="ajem-sidebar-company-logo">
+						<img src="<?php echo esc_url( $employer->company_logo ); ?>"
+							alt="<?php echo esc_attr( $employer->company_name ); ?>"
+							class="ajem-sidebar-company-logo">
 					<?php endif; ?>
 					<h3><?php echo esc_html( $employer->company_name ); ?></h3>
 					<?php if ( $employer->industry ) : ?>
@@ -158,6 +307,9 @@ $phone_number = $employer && $employer->contact_phone ? $employer->contact_phone
 					<?php endif; ?>
 					<?php if ( $employer->company_size ) : ?>
 						<p>👥 <?php echo esc_html( $employer->company_size ); ?> <?php esc_html_e( 'employees', 'ai-job-employer-manager' ); ?></p>
+					<?php endif; ?>
+					<?php if ( $employer->founded_year ) : ?>
+						<p>🗓 <?php printf( esc_html__( 'Founded %s', 'ai-job-employer-manager' ), esc_html( $employer->founded_year ) ); ?></p>
 					<?php endif; ?>
 					<?php if ( $employer->city ) : ?>
 						<p>📍 <?php echo esc_html( $employer->city ); ?><?php echo $employer->state ? ', ' . esc_html( $employer->state ) : ''; ?></p>
@@ -171,56 +323,86 @@ $phone_number = $employer && $employer->contact_phone ? $employer->contact_phone
 				</div>
 			<?php endif; ?>
 
-			<!-- Quick Apply Reminder (mobile-friendly) -->
-			<div class="ajem-sidebar-card ajem-apply-card">
-				<h4><?php esc_html_e( 'Interested?', 'ai-job-employer-manager' ); ?></h4>
-				<?php if ( is_user_logged_in() ) : ?>
-					<button class="ajem-btn ajem-btn-primary ajem-btn-full" id="ajemApplyBtnSidebar" data-job-id="<?php echo esc_attr( $job->id ); ?>">
-						📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
-					</button>
-				<?php else : ?>
-					<a href="<?php echo esc_url( $login_url ); ?>" class="ajem-btn ajem-btn-primary ajem-btn-full">
-						📝 <?php esc_html_e( 'Apply Now', 'ai-job-employer-manager' ); ?>
-					</a>
-				<?php endif; ?>
-				<?php if ( $phone_number ) : ?>
-					<a href="tel:+<?php echo esc_attr( preg_replace( '/\D/', '', $phone_number ) ); ?>" class="ajem-btn ajem-btn-call ajem-btn-full">📞 <?php esc_html_e( 'Call', 'ai-job-employer-manager' ); ?></a>
-				<?php endif; ?>
-				<?php if ( $wa_number ) : ?>
-					<a href="https://wa.me/<?php echo esc_attr( $wa_number ); ?>?text=<?php echo esc_attr( $wa_message ); ?>" class="ajem-btn ajem-btn-whatsapp ajem-btn-full" target="_blank" rel="noopener noreferrer">💬 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?></a>
-				<?php endif; ?>
-			</div>
-		</aside>
+		</aside><!-- /.ajem-jd-sidebar -->
 
-	</div>
+	</div><!-- /.ajem-jd-body -->
 
-	<!-- Related Jobs -->
-	<?php if ( ! empty( $related_jobs ) ) : ?>
-		<div class="ajem-related-jobs">
-			<h3><?php esc_html_e( 'Similar Jobs', 'ai-job-employer-manager' ); ?></h3>
-			<div class="ajem-related-jobs-grid">
-				<?php foreach ( $related_jobs as $related ) : ?>
-					<div class="ajem-related-job-card">
-						<a href="<?php echo esc_url( site_url( '/jobs/' . $related->job_slug ) ); ?>">
-							<h4><?php echo esc_html( $related->job_title ); ?></h4>
-							<p><?php echo esc_html( $related->company_name ?? '' ); ?></p>
-							<?php if ( $related->city ) : ?>
-								<span>📍 <?php echo esc_html( $related->city ); ?></span>
-							<?php endif; ?>
-						</a>
-					</div>
-				<?php endforeach; ?>
+	<!-- ── Related / City / Nearby Jobs ─────────────────────────────────── -->
+	<?php
+	$has_related = ! empty( $related_jobs );
+	$has_city    = ! empty( $city_jobs );
+	$has_nearby  = ! empty( $nearby_jobs );
+
+	if ( $has_related || $has_city || $has_nearby ) :
+	?>
+	<div class="ajem-jd-more-jobs">
+
+		<?php if ( $has_related ) : ?>
+			<div class="ajem-more-jobs-section">
+				<h3 class="ajem-more-jobs-heading">
+					🏭 <?php
+						printf(
+							/* translators: %s: industry name */
+							esc_html__( 'More %s Jobs', 'ai-job-employer-manager' ),
+							esc_html( $job->industry ?? __( 'Similar', 'ai-job-employer-manager' ) )
+						);
+					?>
+				</h3>
+				<div class="ajem-more-jobs-grid">
+					<?php foreach ( $related_jobs as $rjob ) : ?>
+						<?php echo ajem_render_mini_job_card( $rjob ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php endforeach; ?>
+				</div>
 			</div>
-		</div>
+		<?php endif; ?>
+
+		<?php if ( $has_city ) : ?>
+			<div class="ajem-more-jobs-section">
+				<h3 class="ajem-more-jobs-heading">
+					📍 <?php
+						printf(
+							/* translators: %s: city name */
+							esc_html__( 'More Jobs in %s', 'ai-job-employer-manager' ),
+							esc_html( $job->city ?? '' )
+						);
+					?>
+				</h3>
+				<div class="ajem-more-jobs-grid">
+					<?php foreach ( $city_jobs as $cjob ) : ?>
+						<?php echo ajem_render_mini_job_card( $cjob ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php endforeach; ?>
+				</div>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( $has_nearby ) : ?>
+			<div class="ajem-more-jobs-section">
+				<h3 class="ajem-more-jobs-heading">
+					🗺 <?php esc_html_e( 'Nearby Jobs', 'ai-job-employer-manager' ); ?>
+				</h3>
+				<div class="ajem-more-jobs-grid">
+					<?php foreach ( $nearby_jobs as $njob ) : ?>
+						<?php echo ajem_render_mini_job_card( $njob ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php endforeach; ?>
+				</div>
+			</div>
+		<?php endif; ?>
+
+	</div><!-- /.ajem-jd-more-jobs -->
 	<?php endif; ?>
-</div>
 
-<!-- Application Modal -->
+</div><!-- /.ajem-job-detail-page -->
+
+<!-- ── Application Modal ─────────────────────────────────────────────────── -->
 <div class="ajem-modal" id="ajemApplicationModal" style="display:none;" aria-modal="true" role="dialog">
 	<div class="ajem-modal-overlay" id="ajemModalOverlay"></div>
 	<div class="ajem-modal-content">
-		<button class="ajem-modal-close" id="ajemModalClose" aria-label="<?php esc_attr_e( 'Close', 'ai-job-employer-manager' ); ?>">×</button>
-		<h3><?php esc_html_e( 'Apply for:', 'ai-job-employer-manager' ); ?> <?php echo esc_html( $job->job_title ); ?></h3>
+		<button class="ajem-modal-close" id="ajemModalClose"
+			aria-label="<?php esc_attr_e( 'Close', 'ai-job-employer-manager' ); ?>">×</button>
+		<h3>
+			<?php esc_html_e( 'Apply for:', 'ai-job-employer-manager' ); ?>
+			<span class="ajem-modal-job-title"><?php echo esc_html( $job->job_title ); ?></span>
+		</h3>
 
 		<form id="ajemApplicationForm">
 			<?php wp_nonce_field( 'ajem_nonce', 'ajem_nonce' ); ?>
@@ -228,7 +410,8 @@ $phone_number = $employer && $employer->contact_phone ? $employer->contact_phone
 
 			<div class="ajem-form-group">
 				<label for="ajemCoverLetter"><?php esc_html_e( 'Cover Letter', 'ai-job-employer-manager' ); ?></label>
-				<textarea id="ajemCoverLetter" name="cover_letter" rows="6" placeholder="<?php esc_attr_e( 'Tell the employer why you are a good fit...', 'ai-job-employer-manager' ); ?>"></textarea>
+				<textarea id="ajemCoverLetter" name="cover_letter" rows="6"
+					placeholder="<?php esc_attr_e( 'Tell the employer why you are a good fit...', 'ai-job-employer-manager' ); ?>"></textarea>
 			</div>
 
 			<div class="ajem-form-group">
@@ -239,21 +422,76 @@ $phone_number = $employer && $employer->contact_phone ? $employer->contact_phone
 			</div>
 
 			<div class="ajem-form-actions">
-				<button type="submit" class="ajem-btn ajem-btn-primary" id="ajemSubmitApplication"><?php esc_html_e( 'Submit Application', 'ai-job-employer-manager' ); ?></button>
+				<button type="submit" class="ajem-btn ajem-btn-primary" id="ajemSubmitApplication">
+					<?php esc_html_e( 'Submit Application', 'ai-job-employer-manager' ); ?>
+				</button>
 				<span class="ajem-save-status" id="ajemApplicationStatus"></span>
 			</div>
 		</form>
 	</div>
 </div>
 
-<script>
-// Auto-open application modal if ?apply=1 parameter is set (post-login redirect).
 <?php if ( $auto_open && is_user_logged_in() ) : ?>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
 	var modal = document.getElementById('ajemApplicationModal');
-	if (modal) {
-		modal.style.display = 'flex';
-	}
+	if (modal) { modal.style.display = 'flex'; }
 });
-<?php endif; ?>
 </script>
+<?php endif; ?>
+
+<?php
+if ( ! function_exists( 'ajem_render_mini_job_card' ) ) :
+/**
+ * Render a mini job card for related/city/nearby sections.
+ *
+ * @param object $j Job row (with company_name, job_slug, job_title, city, state,
+ *                           salary_min, salary_max, salary_currency, job_type).
+ * @return string Escaped HTML.
+ */
+function ajem_render_mini_job_card( object $j ): string {
+	$type   = str_replace( '_', ' ', ucwords( str_replace( '_', ' ', $j->job_type ?? '' ) ) );
+	$s_min  = $j->salary_min ? number_format( (float) $j->salary_min ) : '';
+	$s_max  = $j->salary_max ? number_format( (float) $j->salary_max ) : '';
+	$s_curr = esc_html( $j->salary_currency ?? 'INR' );
+	$sal    = ( $s_min || $s_max )
+		? $s_curr . ' ' . $s_min . ( $s_min && $s_max ? ' – ' . $s_max : $s_max )
+		: '';
+	$url    = esc_url( site_url( '/jobs/' . $j->job_slug ) );
+
+	ob_start();
+	?>
+	<div class="ajem-mini-job-card">
+		<a href="<?php echo $url; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — already escaped above ?>" class="ajem-mini-job-link">
+			<div class="ajem-mini-job-top">
+				<?php if ( ! empty( $j->company_logo ) ) : ?>
+					<img src="<?php echo esc_url( $j->company_logo ); ?>"
+						alt="<?php echo esc_attr( $j->company_name ?? '' ); ?>"
+						class="ajem-mini-job-logo">
+				<?php else : ?>
+					<div class="ajem-mini-job-logo-placeholder">
+						<?php echo esc_html( mb_strtoupper( mb_substr( $j->company_name ?? 'J', 0, 1 ) ) ); ?>
+					</div>
+				<?php endif; ?>
+				<div class="ajem-mini-job-info">
+					<div class="ajem-mini-job-title"><?php echo esc_html( $j->job_title ); ?></div>
+					<div class="ajem-mini-job-company"><?php echo esc_html( $j->company_name ?? '' ); ?></div>
+				</div>
+			</div>
+			<div class="ajem-mini-job-meta">
+				<?php if ( $j->city ) : ?>
+					<span class="ajem-mini-chip">📍 <?php echo esc_html( $j->city ); ?></span>
+				<?php endif; ?>
+				<?php if ( $type ) : ?>
+					<span class="ajem-badge ajem-badge-type ajem-badge-sm"><?php echo esc_html( $type ); ?></span>
+				<?php endif; ?>
+				<?php if ( $sal ) : ?>
+					<span class="ajem-mini-chip ajem-mini-salary">💰 <?php echo esc_html( $sal ); ?></span>
+				<?php endif; ?>
+			</div>
+		</a>
+	</div>
+	<?php
+	return ob_get_clean();
+}
+endif; // function_exists check.

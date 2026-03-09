@@ -220,19 +220,57 @@ class AJEM_Public_Dashboard {
 		$profile  = new AJEM_Employer_Profile();
 		$employer = $profile->get_by_id( (int) $job->employer_id );
 
-		// Related jobs.
-		$listings      = new AJEM_Job_Listings();
-		$related_result = $listings->get_listings(
-			array(
-				'industry' => $job->industry,
-				'per_page' => 5,
-			)
-		);
-		$related_jobs = array_filter(
-			$related_result['jobs'] ?? array(),
-			fn( $j ) => (int) $j->id !== (int) $job->id
-		);
-		$related_jobs = array_slice( array_values( $related_jobs ), 0, 4 );
+		$listings = new AJEM_Job_Listings();
+
+		// Related jobs: same industry, exclude current job.
+		$related_jobs = array();
+		if ( ! empty( $job->industry ) ) {
+			$related_result = $listings->get_listings(
+				array(
+					'industry' => $job->industry,
+					'per_page' => 5,
+				)
+			);
+			$related_jobs = array_filter(
+				$related_result['jobs'] ?? array(),
+				fn( $j ) => (int) $j->id !== (int) $job->id
+			);
+			$related_jobs = array_slice( array_values( $related_jobs ), 0, 4 );
+		}
+
+		// City jobs: same city, exclude current job and related jobs.
+		$city_jobs = array();
+		if ( ! empty( $job->city ) ) {
+			$city_result = $listings->get_listings(
+				array(
+					'city'     => $job->city,
+					'per_page' => 6,
+				)
+			);
+			$city_jobs = array_filter(
+				$city_result['jobs'] ?? array(),
+				fn( $j ) => (int) $j->id !== (int) $job->id
+			);
+			$city_jobs = array_slice( array_values( $city_jobs ), 0, 4 );
+		}
+
+		// Nearby jobs: Haversine within 50 km, exclude current job.
+		$nearby_jobs = array();
+		if ( ! empty( $job->latitude ) && ! empty( $job->longitude ) ) {
+			$nearby_result = $listings->get_listings(
+				array(
+					'lat'         => (float) $job->latitude,
+					'lng'         => (float) $job->longitude,
+					'distance_km' => 50,
+					'per_page'    => 6,
+				)
+			);
+			$nearby_jobs = array_filter(
+				$nearby_result['jobs'] ?? array(),
+				fn( $j ) => (int) $j->id !== (int) $job->id
+			);
+			$nearby_jobs = array_slice( array_values( $nearby_jobs ), 0, 4 );
+		}
 
 		$job->required_skills_array = json_decode( $job->required_skills ?? '[]', true ) ?? array();
 

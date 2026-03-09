@@ -84,11 +84,23 @@ $city         = sanitize_text_field( wp_unslash( $_GET['city'] ?? '' ) );
 				<div class="ajem-filter-group">
 					<h4><?php esc_html_e( 'Salary Range', 'ai-job-employer-manager' ); ?></h4>
 					<div class="ajem-salary-range">
-						<input type="number" name="salary_min" placeholder="<?php esc_attr_e( 'Min', 'ai-job-employer-manager' ); ?>" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET['salary_min'] ?? '' ) ) ); ?>" min="0">
-						<span>—</span>
-						<input type="number" name="salary_max" placeholder="<?php esc_attr_e( 'Max', 'ai-job-employer-manager' ); ?>" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET['salary_max'] ?? '' ) ) ); ?>" min="0">
+						<div class="ajem-salary-field">
+							<label for="ajemSalMin"><?php esc_html_e( 'Min', 'ai-job-employer-manager' ); ?></label>
+							<input type="number" id="ajemSalMin" name="salary_min"
+								placeholder="0"
+								value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET['salary_min'] ?? '' ) ) ); ?>"
+								min="0">
+						</div>
+						<span class="ajem-salary-sep">–</span>
+						<div class="ajem-salary-field">
+							<label for="ajemSalMax"><?php esc_html_e( 'Max', 'ai-job-employer-manager' ); ?></label>
+							<input type="number" id="ajemSalMax" name="salary_max"
+								placeholder="<?php esc_attr_e( 'Any', 'ai-job-employer-manager' ); ?>"
+								value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET['salary_max'] ?? '' ) ) ); ?>"
+								min="0">
+						</div>
 					</div>
-					<button type="submit" class="ajem-btn ajem-btn-sm"><?php esc_html_e( 'Apply', 'ai-job-employer-manager' ); ?></button>
+					<button type="submit" class="ajem-btn ajem-btn-sm ajem-btn-full"><?php esc_html_e( 'Apply', 'ai-job-employer-manager' ); ?></button>
 				</div>
 
 				<div class="ajem-filter-group">
@@ -144,14 +156,14 @@ $city         = sanitize_text_field( wp_unslash( $_GET['city'] ?? '' ) );
 										<span class="ajem-meta-item">📍 <?php echo esc_html( $job->city ); ?><?php echo $job->state ? ', ' . esc_html( $job->state ) : ''; ?></span>
 									<?php endif; ?>
 									<span class="ajem-badge ajem-badge-type"><?php echo esc_html( str_replace( '_', ' ', ucfirst( $job->job_type ) ) ); ?></span>
-									<?php if ( $job->salary_min || $job->salary_max ) : ?>
-										<span class="ajem-meta-item ajem-salary">
-											<?php echo esc_html( $job->salary_currency ?? 'INR' ); ?>
-											<?php echo $job->salary_min ? esc_html( number_format( (float) $job->salary_min ) ) : ''; ?>
-											<?php echo ( $job->salary_min && $job->salary_max ) ? ' — ' : ''; ?>
-											<?php echo $job->salary_max ? esc_html( number_format( (float) $job->salary_max ) ) : ''; ?>
-										</span>
-									<?php endif; ?>
+									<?php if ( $job->salary_min || $job->salary_max ) :
+										$sal_curr = $job->salary_currency ?? 'INR';
+										$sal_min  = $job->salary_min ? number_format( (float) $job->salary_min ) : '';
+										$sal_max  = $job->salary_max ? number_format( (float) $job->salary_max ) : '';
+										$sal_str  = $sal_curr . ' ' . $sal_min . ( $sal_min && $sal_max ? ' – ' . $sal_max : $sal_max );
+									?>
+									<span class="ajem-meta-item ajem-salary">💰 <?php echo esc_html( $sal_str ); ?></span>
+								<?php endif; ?>
 								</div>
 							</div>
 							<?php if ( $job->is_featured ) : ?>
