@@ -107,12 +107,73 @@ $type_label = esc_html( str_replace( '_', ' ', ucwords( str_replace( '_', ' ', $
 
 // Posted date.
 $posted_diff = human_time_diff( strtotime( $job->created_at ), time() );
+$posted_date = date_i18n( get_option( 'date_format' ), strtotime( $job->created_at ) );
 
 // Company initial fallback.
 $company_initial = mb_strtoupper( mb_substr( $employer ? $employer->company_name : 'J', 0, 1 ) );
+
+// Social share URLs.
+$share_text        = rawurlencode( $job->job_title . ( $employer ? ' at ' . $employer->company_name : '' ) );
+$linkedin_share    = 'https://www.linkedin.com/sharing/share-offsite/?url=' . rawurlencode( $job_url );
+$twitter_share     = 'https://twitter.com/intent/tweet?text=' . $share_text . '&url=' . rawurlencode( $job_url );
+
+// Breadcrumb: resolve job listings page.
+$ajem_settings    = get_option( 'ajem_settings', array() );
+$listings_page_id = ! empty( $ajem_settings['listings_page_id'] ) ? (int) $ajem_settings['listings_page_id'] : 0;
+$listings_url     = $listings_page_id > 0 ? get_permalink( $listings_page_id ) : '';
+
+// Deadline status.
+$days_until_deadline = null;
+if ( $job->application_deadline ) {
+	$days_until_deadline = (int) ceil(
+		( strtotime( $job->application_deadline ) - time() ) / DAY_IN_SECONDS
+	);
+}
 ?>
 
+<!-- ── Breadcrumb ───────────────────────────────────────────────────────── -->
+<nav class="ajem-breadcrumb" aria-label="<?php esc_attr_e( 'Breadcrumb', 'ai-job-employer-manager' ); ?>">
+	<ol class="ajem-breadcrumb-list">
+		<li class="ajem-breadcrumb-item">
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'Home', 'ai-job-employer-manager' ); ?></a>
+		</li>
+		<li class="ajem-breadcrumb-sep" aria-hidden="true">/</li>
+		<?php if ( $listings_url ) : ?>
+			<li class="ajem-breadcrumb-item">
+				<a href="<?php echo esc_url( $listings_url ); ?>"><?php esc_html_e( 'Jobs', 'ai-job-employer-manager' ); ?></a>
+			</li>
+			<li class="ajem-breadcrumb-sep" aria-hidden="true">/</li>
+		<?php endif; ?>
+		<li class="ajem-breadcrumb-item" aria-current="page"><?php echo esc_html( $job->job_title ); ?></li>
+	</ol>
+</nav>
+
 <div class="ajem-job-detail-page">
+
+	<!-- ── Status / Deadline Alert ───────────────────────────────────────── -->
+	<?php if ( in_array( $job->status, array( 'closed', 'expired' ), true ) ) : ?>
+		<div class="ajem-job-notice ajem-job-notice-error" role="alert">
+			<span>🚫</span>
+			<span><?php esc_html_e( 'This job is no longer accepting applications.', 'ai-job-employer-manager' ); ?></span>
+		</div>
+	<?php elseif ( null !== $days_until_deadline && $days_until_deadline <= 7 && $days_until_deadline >= 0 ) : ?>
+		<div class="ajem-job-notice ajem-job-notice-warning" role="alert">
+			<span>⏰</span>
+			<span>
+				<?php
+				if ( 0 === $days_until_deadline ) {
+					esc_html_e( 'Last day to apply!', 'ai-job-employer-manager' );
+				} else {
+					printf(
+						/* translators: %d: number of days remaining */
+						esc_html( _n( 'Only %d day left to apply!', 'Only %d days left to apply!', $days_until_deadline, 'ai-job-employer-manager' ) ),
+						(int) $days_until_deadline
+					);
+				}
+				?>
+			</span>
+		</div>
+	<?php endif; ?>
 
 	<!-- ── Header Card ───────────────────────────────────────────────────── -->
 	<div class="ajem-jd-header-card">
@@ -162,7 +223,7 @@ $company_initial = mb_strtoupper( mb_substr( $employer ? $employer->company_name
 						<span class="ajem-meta-chip ajem-salary-chip">💰 <?php echo esc_html( $salary_str ); ?></span>
 					<?php endif; ?>
 
-					<span class="ajem-meta-chip">🕒 <?php
+					<span class="ajem-meta-chip" title="<?php echo esc_attr( $posted_date ); ?>">🕒 <?php
 						/* translators: %s: time ago string */
 						printf( esc_html__( 'Posted %s ago', 'ai-job-employer-manager' ), esc_html( $posted_diff ) );
 					?></span>
@@ -175,6 +236,12 @@ $company_initial = mb_strtoupper( mb_substr( $employer ? $employer->company_name
 								esc_html( date_i18n( get_option( 'date_format' ), strtotime( $job->application_deadline ) ) )
 							);
 						?></span>
+					<?php endif; ?>
+
+					<?php if ( $job->views_count > 0 ) : ?>
+						<span class="ajem-meta-chip ajem-meta-chip-views" title="<?php esc_attr_e( 'Number of views', 'ai-job-employer-manager' ); ?>">
+							👁 <?php echo esc_html( number_format( (int) $job->views_count ) ); ?>
+						</span>
 					<?php endif; ?>
 				</div>
 			</div><!-- /.ajem-jd-heading -->
@@ -219,7 +286,17 @@ $company_initial = mb_strtoupper( mb_substr( $employer ? $employer->company_name
 		</button>
 		<a href="https://wa.me/?text=<?php echo esc_attr( rawurlencode( $job->job_title . ' — ' . $job_url ) ); ?>"
 			class="ajem-btn ajem-btn-outline" target="_blank" rel="noopener noreferrer">
-			📲 <?php esc_html_e( 'Share', 'ai-job-employer-manager' ); ?>
+			📲 <?php esc_html_e( 'WhatsApp', 'ai-job-employer-manager' ); ?>
+		</a>
+		<a href="<?php echo esc_url( $linkedin_share ); ?>"
+			class="ajem-btn ajem-btn-linkedin" target="_blank" rel="noopener noreferrer"
+			aria-label="<?php esc_attr_e( 'Share on LinkedIn', 'ai-job-employer-manager' ); ?>">
+			<?php esc_html_e( 'LinkedIn', 'ai-job-employer-manager' ); ?>
+		</a>
+		<a href="<?php echo esc_url( $twitter_share ); ?>"
+			class="ajem-btn ajem-btn-twitter" target="_blank" rel="noopener noreferrer"
+			aria-label="<?php esc_attr_e( 'Share on X / Twitter', 'ai-job-employer-manager' ); ?>">
+			<?php esc_html_e( 'X Share', 'ai-job-employer-manager' ); ?>
 		</a>
 	</div><!-- /.ajem-jd-action-bar -->
 

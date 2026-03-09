@@ -128,6 +128,14 @@ class AJEM_Admin_Settings {
 			'ajem-settings',
 			'ajem_general'
 		);
+
+		add_settings_field(
+			'listings_page_id',
+			__( 'Job Listings Page', 'ai-job-employer-manager' ),
+			array( $this, 'field_listings_page' ),
+			'ajem-settings',
+			'ajem_general'
+		);
 	}
 
 	/**
@@ -147,6 +155,9 @@ class AJEM_Admin_Settings {
 
 		$output['jobs_per_page'] = isset( $input['jobs_per_page'] )
 			? absint( $input['jobs_per_page'] ) : 20;
+
+		$output['listings_page_id'] = isset( $input['listings_page_id'] )
+			? absint( $input['listings_page_id'] ) : 0;
 
 		return $output;
 	}
@@ -378,5 +389,30 @@ class AJEM_Admin_Settings {
 		$options = get_option( self::OPTION_NAME, array() );
 		$value   = isset( $options['jobs_per_page'] ) ? (int) $options['jobs_per_page'] : 20;
 		echo '<input type="number" name="' . esc_attr( self::OPTION_NAME ) . '[jobs_per_page]" value="' . esc_attr( $value ) . '" min="5" max="100">';
+	}
+
+	/**
+	 * Render listings_page_id field — a page-dropdown to select which WP page
+	 * hosts the [job_listings] shortcode.  Used for breadcrumbs and SEO links.
+	 *
+	 * @return void
+	 */
+	public function field_listings_page(): void {
+		$options = get_option( self::OPTION_NAME, array() );
+		$value   = isset( $options['listings_page_id'] ) ? (int) $options['listings_page_id'] : 0;
+
+		wp_dropdown_pages(
+			array(
+				'name'              => esc_attr( self::OPTION_NAME ) . '[listings_page_id]',
+				'id'                => 'ajem_listings_page_id',
+				'selected'          => $value,
+				'show_option_none'  => __( '— Select a page —', 'ai-job-employer-manager' ),
+				'option_none_value' => '0',
+			)
+		);
+
+		echo '<p class="description">'
+			. esc_html__( 'Select the WordPress page that contains the [job_listings] shortcode. Used for SEO breadcrumbs.', 'ai-job-employer-manager' )
+			. '</p>';
 	}
 }

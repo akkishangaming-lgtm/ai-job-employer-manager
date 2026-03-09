@@ -1457,3 +1457,127 @@
 		grid-template-columns: 1fr 1fr;
 	}
 }
+
+/* ── Breadcrumb ──────────────────────────────────────────────────────────── */
+.ajem-breadcrumb {
+	margin-bottom: 16px;
+	font-size:     13px;
+}
+
+.ajem-breadcrumb-list {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    flex;
+	flex-wrap:  wrap;
+	align-items: center;
+	gap:        4px;
+}
+
+.ajem-breadcrumb-item {
+	display:     inline-flex;
+	align-items: center;
+}
+
+.ajem-breadcrumb-item a {
+	color:           var(--ajem-primary);
+	text-decoration: none;
+}
+
+.ajem-breadcrumb-item a:hover {
+	text-decoration: underline;
+}
+
+.ajem-breadcrumb-item[aria-current='page'] {
+	color:         var(--ajem-text);
+	font-weight:   500;
+	white-space:   nowrap;
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	max-width:     260px;
+}
+
+.ajem-breadcrumb-sep {
+	color:       var(--ajem-text-light);
+	opacity:     0.55;
+	user-select: none;
+}
+
+/* ── Job Status / Deadline Notice Banner ─────────────────────────────────── */
+.ajem-job-notice {
+	display:       flex;
+	align-items:   center;
+	gap:           10px;
+	padding:       12px 18px;
+	border-radius: var(--ajem-radius);
+	margin-bottom: 16px;
+	font-size:     14px;
+	font-weight:   500;
+	line-height:   1.4;
+}
+
+.ajem-job-notice-warning {
+	background: #fef9e7;
+	border:     1px solid #f9ca24;
+	color:      #7d5e00;
+}
+
+.ajem-job-notice-error {
+	background: #fdecea;
+	border:     1px solid #f5c6c6;
+	color:      #8b1e1e;
+}
+
+.ajem-job-notice-success {
+	background: #eafaf1;
+	border:     1px solid #a9dfbf;
+	color:      #1e5631;
+}
+
+/* ── Header card – subtle primary accent on top border ───────────────────── */
+.ajem-jd-header-card {
+	border-top-width: 3px;
+	border-top-color: var(--ajem-primary);
+}
+
+/* ── Views counter chip ──────────────────────────────────────────────────── */
+.ajem-meta-chip-views {
+	font-size: 12px;
+	opacity:   0.85;
+}
+
+/* ── Social share buttons ────────────────────────────────────────────────── */
+.ajem-btn-linkedin {
+	background:   #0077b5;
+	color:        #fff;
+	border-color: #0077b5;
+}
+
+.ajem-btn-linkedin:hover,
+.ajem-btn-linkedin:focus {
+	background:      #005e93;
+	border-color:    #005e93;
+	color:           #fff;
+	text-decoration: none;
+}
+
+.ajem-btn-twitter {
+	background:   #000;
+	color:        #fff;
+	border-color: #000;
+}
+
+.ajem-btn-twitter:hover,
+.ajem-btn-twitter:focus {
+	background:      #222;
+	border-color:    #222;
+	color:           #fff;
+	text-decoration: none;
+}
+
+/* ── Responsive additions ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+	.ajem-breadcrumb-item[aria-current='page'] {
+		max-width: 160px;
+	}
+}
