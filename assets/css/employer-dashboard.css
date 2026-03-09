@@ -1082,6 +1082,9 @@
 	width:           100%;
 	border-collapse: collapse;
 	font-size:       14px;
+	border:          1px solid var(--ajem-border);
+	border-radius:   var(--ajem-radius);
+	overflow:        hidden;
 }
 
 .ajem-highlights-table tbody tr {
@@ -1093,20 +1096,22 @@
 }
 
 .ajem-highlights-table th {
-	text-align:    left;
-	padding:       10px 14px 10px 0;
-	font-weight:   600;
-	color:         var(--ajem-text-light);
-	white-space:   nowrap;
-	width:         42%;
-	vertical-align: top;
+	text-align:      center;
+	padding:         12px 16px;
+	font-weight:     600;
+	color:           var(--ajem-text-light);
+	white-space:     nowrap;
+	width:           38%;
+	vertical-align:  middle;
+	background:      var(--ajem-bg);
+	border-right:    1px solid var(--ajem-border);
 }
 
 .ajem-highlights-table td {
-	padding:       10px 0;
-	font-weight:   600;
-	color:         var(--ajem-text);
-	vertical-align: top;
+	padding:        12px 16px;
+	font-weight:    600;
+	color:          var(--ajem-text);
+	vertical-align: middle;
 }
 
 .ajem-ht-icon {
